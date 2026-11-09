@@ -1,0 +1,8 @@
+*.py
+requirements.txt
+*.pdf
+*.xlsx
+*.csv
+*.db
+*.bat
+config_*.json

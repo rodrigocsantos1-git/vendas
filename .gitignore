@@ -10,3 +10,5 @@ __pycache__/
 
 # Large PDFs (optional)
 # Catalogo.pdf is 85MB; GitHub limit is 100MB, so let's track it or leave it as needed.
+
+.vercel

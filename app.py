@@ -146,8 +146,56 @@ def load_data():
     df_cli = pd.DataFrame(clientes)
     return df_prod, df_vend, df_cli
 
+# ========================================================
+# BARREIRA DE AUTENTICAÇÃO ADMINISTRATIVA
+# ========================================================
+if "usuario_autenticado" not in st.session_state:
+    st.session_state["usuario_autenticado"] = False
+    st.session_state["usuario_info"] = None
+
+if not st.session_state["usuario_autenticado"]:
+    col_vazia1, col_card, col_vazia2 = st.columns([1, 1.8, 1])
+    with col_card:
+        st.markdown("""
+        <div style="background: white; padding: 26px; border-radius: 18px; border: 1px solid #fed7aa; box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.12); margin-top: 30px; text-align: center;">
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #ea580c, #f59e0b); border-radius: 16px; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; color: white; font-size: 26px; box-shadow: 0 4px 12px rgba(234,88,12,0.3);">🔐</div>
+            <h2 style="color: #1e293b; margin-bottom: 2px; font-weight: 800; font-size: 22px;">Vendas Barreto Corrêa</h2>
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 18px;">Acesso Restrito aos Administradores</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.form("form_login_admin"):
+            email_login = st.text_input("E-mail de Administrador", placeholder="rodrigo.correa01@outlook.com ou daniele_barreto@hotmail.com")
+            senha_login = st.text_input("Senha de Acesso", type="password", placeholder="Digite sua senha")
+            btn_entrar = st.form_submit_button("Entrar no Painel", use_container_width=True)
+            
+            if btn_entrar:
+                if not email_login or not senha_login:
+                    st.warning("Por favor, preencha o e-mail e a senha.")
+                else:
+                    res_auth = db.autenticar_usuario(email_login, senha_login)
+                    if res_auth.get("sucesso"):
+                        st.session_state["usuario_autenticado"] = True
+                        st.session_state["usuario_info"] = res_auth["usuario"]
+                        st.success(f"Bem-vindo(a), {res_auth['usuario'].get('nome', 'Administrador')}!")
+                        st.rerun()
+                    else:
+                        st.error(res_auth.get("mensagem", "Credenciais inválidas."))
+                        
+        st.caption("🔒 Apenas Rodrigo Corrêa e Daniele Barreto possuem acesso de administrador.")
+    st.stop()
+
 # Barra Lateral (Sidebar)
 with st.sidebar:
+    # Cabeçalho do Administrador Logado
+    user_info = st.session_state.get("usuario_info", {})
+    st.markdown(f"👤 **{user_info.get('nome', 'Administrador')}**")
+    st.caption(f"🔑 {user_info.get('email', '')} (Acesso Total)")
+    if st.button("🚪 Sair / Logout", use_container_width=True):
+        st.session_state["usuario_autenticado"] = False
+        st.session_state["usuario_info"] = None
+        st.rerun()
+    st.divider()
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Natura_Cosmeticos_logo.svg/320px-Natura_Cosmeticos_logo.svg.png", width=160)
     st.markdown("### 🛍️ Vendas Natura")
     st.caption("Painel de Gestão Integrado")

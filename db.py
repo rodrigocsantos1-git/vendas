@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import json
+import hashlib
 from parse_nf import parse_items
 import supabase_client
 
@@ -110,6 +111,29 @@ def init_db(force_reseed=False):
         FOREIGN KEY(cliente_id) REFERENCES clientes(id)
     )
     """)
+    
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS usuarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        nome TEXT NOT NULL,
+        senha_hash TEXT NOT NULL,
+        perfil TEXT DEFAULT 'admin',
+        ativo INTEGER DEFAULT 1,
+        criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+        ultimo_login TEXT
+    )
+    """)
+    
+    # Inserir usuários padrão caso não existam
+    cursor.execute("SELECT COUNT(*) as c FROM usuarios")
+    if cursor.fetchone()['c'] == 0:
+        cursor.execute("""
+        INSERT INTO usuarios (email, nome, senha_hash, perfil, ativo) VALUES
+        ('rodrigo.correa01@outlook.com', 'Rodrigo Corrêa', 'alterar123', 'admin', 1),
+        ('daniele_barreto@hotmail.com', 'Daniele Barreto', 'alterar123', 'admin', 1)
+        """)
+        
     conn.commit()
     conn.close()
 
@@ -471,6 +495,76 @@ def cancelar_venda(venda_id):
     WHERE id = ?
     """, (venda['quantidade'], venda['quantidade'], venda['produto_id']))
     cursor.execute("DELETE FROM vendas WHERE id = ?", (venda_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+def hash_senha(senha):
+    """Gera hash SHA-256 para senhas."""
+    return hashlib.sha256(senha.strip().encode('utf-8')).hexdigest()
+
+def autenticar_usuario(email, senha):
+    """
+    Autentica usuário comparando com Supabase (ou banco local se offline).
+    Aceita senha tanto em texto puro quanto hash SHA-256 no banco.
+    """
+    email_limpo = email.strip().lower()
+    senha_limpa = senha.strip()
+    senha_sha256 = hash_senha(senha_limpa)
+
+    # 1. Tentar Supabase
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            res = sb.table("usuarios").select("*").eq("email", email_limpo).eq("ativo", True).execute()
+            if res.data and len(res.data) > 0:
+                user = res.data[0]
+                db_hash = str(user.get("senha_hash", ""))
+                # Compara tanto com texto direto quanto com sha256
+                if db_hash == senha_limpa or db_hash == senha_sha256:
+                    # Atualiza último login
+                    try:
+                        from datetime import datetime
+                        sb.table("usuarios").update({"ultimo_login": datetime.now().isoformat()}).eq("id", user["id"]).execute()
+                    except:
+                        pass
+                    return {"sucesso": True, "usuario": user}
+                else:
+                    return {"sucesso": False, "mensagem": "Senha incorreta."}
+        except Exception as e:
+            print("Aviso ao autenticar no Supabase, tentando local:", e)
+
+    # 2. Fallback SQLite local
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM usuarios WHERE LOWER(email) = ? AND ativo = 1", (email_limpo,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        user = dict(row)
+        db_hash = str(user.get("senha_hash", ""))
+        if db_hash == senha_limpa or db_hash == senha_sha256:
+            return {"sucesso": True, "usuario": user}
+        return {"sucesso": False, "mensagem": "Senha incorreta."}
+
+    return {"sucesso": False, "mensagem": "Usuário não encontrado ou inativo."}
+
+def alterar_senha_usuario(email, nova_senha):
+    """Atualiza a senha do usuário no Supabase e no banco local."""
+    email_limpo = email.strip().lower()
+    senha_limpa = nova_senha.strip()
+
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            sb.table("usuarios").update({"senha_hash": senha_limpa}).eq("email", email_limpo).execute()
+        except Exception as e:
+            print("Erro ao atualizar senha no Supabase:", e)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE usuarios SET senha_hash = ? WHERE LOWER(email) = ?", (senha_limpa, email_limpo))
     conn.commit()
     conn.close()
     return True
