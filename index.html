@@ -476,16 +476,51 @@
                 </div>
               </div>
 
-              <!-- Dados do Cliente -->
+              <!-- Dados do Cliente (Com Busca na Base + Opção de Novo Cliente) -->
               <div class="pt-3 border-t border-slate-100">
-                <h3 class="text-xs font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">
-                  <i class="fa-solid fa-user"></i> Dados do Cliente
-                </h3>
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                      <i class="fa-solid fa-user text-orange-600"></i> Dados do Cliente
+                    </h3>
+                    <span id="badgeStatusClienteVenda" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                      Busque na base ou digite um novo
+                    </span>
+                  </div>
+                  <button 
+                    type="button" 
+                    onclick="abrirModalClienteParaVenda()" 
+                    class="px-2.5 py-1 bg-orange-50 hover:bg-orange-600 text-orange-700 hover:text-white border border-orange-200 rounded-lg text-[11px] font-extrabold transition flex items-center gap-1 shadow-sm"
+                  >
+                    <i class="fa-solid fa-user-plus"></i> + Cadastrar Novo Cliente
+                  </button>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nome do Cliente *</label>
-                    <input type="text" id="vendaClienteNome" list="clientesList" placeholder="Ex: Maria da Silva" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500">
-                    <datalist id="clientesList"></datalist>
+                  <div class="relative">
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">
+                      Buscar Cliente Cadastrado ou Digitar Novo *
+                    </label>
+                    <div class="relative">
+                      <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                      <input 
+                        type="text" 
+                        id="vendaClienteNome" 
+                        oninput="buscarClientesVenda(this.value)" 
+                        onfocus="buscarClientesVenda(this.value)"
+                        placeholder="Clique para ver clientes ou digite o nome..." 
+                        autocomplete="off"
+                        required 
+                        class="w-full pl-8 pr-8 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition"
+                      >
+                      <button type="button" onclick="limparClienteVenda()" id="btnLimparClienteVenda" class="hidden absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 p-0.5" title="Limpar cliente">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                      </button>
+                    </div>
+
+                    <!-- Dropdown Flutuante de Clientes da Base -->
+                    <div id="dropdownResultadosCliente" class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-orange-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
+                    </div>
                   </div>
                   <div>
                     <label class="block text-[11px] font-semibold text-slate-600 mb-1">Telefone / WhatsApp</label>
@@ -853,12 +888,18 @@
       inicializarDatasPadrao();
       verificarSessao();
 
-      // Fechar dropdown de produto ao clicar fora
+      // Fechar dropdowns de produto e de cliente ao clicar fora
       document.addEventListener('click', (e) => {
-        const input = document.getElementById('buscaProdutoInput');
-        const dropdown = document.getElementById('dropdownResultadosProduto');
-        if (input && dropdown && !input.contains(e.target) && !dropdown.contains(e.target)) {
-          dropdown.classList.add('hidden');
+        const inputProd = document.getElementById('buscaProdutoInput');
+        const dropdownProd = document.getElementById('dropdownResultadosProduto');
+        if (inputProd && dropdownProd && !inputProd.contains(e.target) && !dropdownProd.contains(e.target)) {
+          dropdownProd.classList.add('hidden');
+        }
+
+        const inputCli = document.getElementById('vendaClienteNome');
+        const dropdownCli = document.getElementById('dropdownResultadosCliente');
+        if (inputCli && dropdownCli && !inputCli.contains(e.target) && !dropdownCli.contains(e.target)) {
+          dropdownCli.classList.add('hidden');
         }
       });
     });
@@ -1601,6 +1642,7 @@
         document.getElementById('formVenda').reset();
         inicializarDatasPadrao();
         limparBuscaProduto();
+        limparClienteVenda();
 
       } catch (err) {
         console.error("Erro ao salvar venda:", err);
@@ -1665,8 +1707,186 @@
       renderizarClientes(filtrados);
     }
 
+    // ================= BUSCA DE CLIENTES NA BASE DURANTE A VENDA + NOVO CLIENTE =================
+    let modalClienteOrigemVenda = false;
+
+    function buscarClientesVenda(termo) {
+      const termoOriginal = (termo || '').trim();
+      const termoLimpo = termoOriginal.toLowerCase();
+      const dropdown = document.getElementById('dropdownResultadosCliente');
+      const btnLimpar = document.getElementById('btnLimparClienteVenda');
+      const badge = document.getElementById('badgeStatusClienteVenda');
+
+      if (!dropdown) return;
+
+      if (termoOriginal.length > 0) {
+        if (btnLimpar) btnLimpar.classList.remove('hidden');
+      } else {
+        if (btnLimpar) btnLimpar.classList.add('hidden');
+        if (badge) {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600';
+          badge.textContent = 'Busque na base ou digite um novo';
+        }
+      }
+
+      // Verifica se o texto digitado já corresponde exatamente a algum cliente
+      const clienteExato = clientesCache.find(c => (c.nome || '').toLowerCase() === termoLimpo);
+      if (clienteExato && termoLimpo) {
+        if (badge) {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300';
+          badge.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>Cliente cadastrado na base';
+        }
+      } else if (termoLimpo) {
+        if (badge) {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300';
+          badge.innerHTML = '<i class="fa-solid fa-user-plus mr-1"></i>Novo cliente (será salvo ao confirmar)';
+        }
+      }
+
+      // Filtra clientes da base (se estiver em branco, lista os clientes cadastrados para seleção rápida)
+      const correspondentes = clientesCache.filter(c => {
+        if (!termoLimpo) return true;
+        const nomeMatch = (c.nome || '').toLowerCase().includes(termoLimpo);
+        const telMatch = (c.telefone || '').toLowerCase().includes(termoLimpo);
+        const emailMatch = (c.email || '').toLowerCase().includes(termoLimpo);
+        return nomeMatch || telMatch || emailMatch;
+      }).slice(0, 8);
+
+      const termoEscapado = termoOriginal.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+      let htmlLista = '';
+
+      if (correspondentes.length > 0) {
+        htmlLista += `
+          <div class="px-3 py-1.5 bg-orange-50/70 text-[10px] font-extrabold text-orange-800 uppercase tracking-wider">
+            Clientes Cadastrados na Base (${correspondentes.length}) — Clique para selecionar
+          </div>
+        `;
+        htmlLista += correspondentes.map(c => {
+          const tel = c.telefone || 'Sem telefone';
+          const email = c.email ? ` • ${c.email}` : '';
+          return `
+            <div onclick="selecionarClienteVenda('${c.id}')" class="p-2.5 hover:bg-orange-50 cursor-pointer transition flex items-center justify-between text-left">
+              <div>
+                <p class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                  <i class="fa-solid fa-user-check text-emerald-600 text-[11px]"></i>
+                  <span>${c.nome}</span>
+                </p>
+                <p class="text-[11px] text-slate-500 mt-0.5 font-mono">${tel}${email}</p>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                Selecionar
+              </span>
+            </div>
+          `;
+        }).join('');
+      } else {
+        htmlLista += `
+          <div class="p-3 text-center text-xs text-slate-600 bg-slate-50/60">
+            Nenhum cliente encontrado na base com "<b>${termoOriginal}</b>".
+          </div>
+        `;
+      }
+
+      // Rodapé do Dropdown com opção explícita de criar novo cliente
+      htmlLista += `
+        <div class="p-2.5 bg-orange-50/90 border-t border-orange-200 flex flex-col gap-1.5">
+          ${termoOriginal ? `
+            <button type="button" onclick="usarNovoClienteDigitado('${termoEscapado}')" class="w-full py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-check"></i>
+              <span>Usar "${termoOriginal}" e preencher dados abaixo</span>
+            </button>
+          ` : ''}
+          <button type="button" onclick="abrirModalClienteParaVenda('${termoEscapado}')" class="w-full py-1.5 px-3 bg-white hover:bg-orange-600 text-orange-700 hover:text-white border border-orange-300 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>${termoOriginal ? `Cadastrar "${termoOriginal}" na Ficha de Novo Cliente` : '+ Cadastrar Novo Cliente na Base Agora'}</span>
+          </button>
+        </div>
+      `;
+
+      dropdown.innerHTML = htmlLista;
+      dropdown.classList.remove('hidden');
+    }
+
+    function selecionarClienteVenda(id) {
+      const c = clientesCache.find(x => String(x.id) === String(id));
+      const dropdown = document.getElementById('dropdownResultadosCliente');
+      const btnLimpar = document.getElementById('btnLimparClienteVenda');
+      const badge = document.getElementById('badgeStatusClienteVenda');
+
+      if (dropdown) dropdown.classList.add('hidden');
+      if (!c) return;
+
+      document.getElementById('vendaClienteNome').value = c.nome || '';
+      document.getElementById('vendaClienteTel').value = c.telefone || '';
+      document.getElementById('vendaClienteEmail').value = c.email || '';
+      document.getElementById('vendaClienteNasc').value = c.data_nascimento || '';
+
+      if (btnLimpar) btnLimpar.classList.remove('hidden');
+      if (badge) {
+        badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300';
+        badge.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i>Cliente da Base: ${c.nome}`;
+      }
+    }
+
+    function usarNovoClienteDigitado(nome) {
+      const dropdown = document.getElementById('dropdownResultadosCliente');
+      const badge = document.getElementById('badgeStatusClienteVenda');
+      if (dropdown) dropdown.classList.add('hidden');
+
+      if (nome) {
+        document.getElementById('vendaClienteNome').value = nome;
+      }
+      if (badge) {
+        badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300';
+        badge.innerHTML = '<i class="fa-solid fa-user-plus mr-1"></i>Novo Cliente (será salvo na base ao confirmar venda)';
+      }
+      document.getElementById('vendaClienteTel').focus();
+    }
+
+    function limparClienteVenda() {
+      document.getElementById('vendaClienteNome').value = '';
+      document.getElementById('vendaClienteTel').value = '';
+      document.getElementById('vendaClienteEmail').value = '';
+      document.getElementById('vendaClienteNasc').value = '';
+      const btnLimpar = document.getElementById('btnLimparClienteVenda');
+      const dropdown = document.getElementById('dropdownResultadosCliente');
+      const badge = document.getElementById('badgeStatusClienteVenda');
+
+      if (btnLimpar) btnLimpar.classList.add('hidden');
+      if (dropdown) dropdown.classList.add('hidden');
+      if (badge) {
+        badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600';
+        badge.textContent = 'Busque na base ou digite um novo';
+      }
+    }
+
+    function abrirModalClienteParaVenda(nomeSugerido) {
+      const dropdown = document.getElementById('dropdownResultadosCliente');
+      if (dropdown) dropdown.classList.add('hidden');
+
+      modalClienteOrigemVenda = true;
+      const nomeAtual = nomeSugerido !== undefined ? nomeSugerido : (document.getElementById('vendaClienteNome').value || '').trim();
+      const telAtual = (document.getElementById('vendaClienteTel').value || '').trim();
+      const emailAtual = (document.getElementById('vendaClienteEmail').value || '').trim();
+      const nascAtual = document.getElementById('vendaClienteNasc').value || '';
+
+      document.getElementById('modalClienteId').value = '';
+      document.getElementById('modalClienteTitulo').innerHTML = `<i class="fa-solid fa-user-plus text-orange-600"></i><span>Cadastrar Novo Cliente para a Venda</span>`;
+      document.getElementById('formClienteModal').reset();
+
+      document.getElementById('modalClienteNome').value = nomeAtual;
+      document.getElementById('modalClienteTelefone').value = telAtual;
+      document.getElementById('modalClienteEmail').value = emailAtual;
+      document.getElementById('modalClienteNascimento').value = nascAtual;
+
+      document.getElementById('modalCliente').classList.remove('hidden');
+      document.getElementById('modalClienteNome').focus();
+    }
+
     // Modal de Cliente
     function abrirModalCliente() {
+      modalClienteOrigemVenda = false;
       document.getElementById('modalClienteId').value = '';
       document.getElementById('modalClienteTitulo').innerHTML = `<i class="fa-solid fa-user-plus text-orange-600"></i><span>Cadastrar Novo Cliente</span>`;
       document.getElementById('formClienteModal').reset();
@@ -1730,6 +1950,20 @@
 
         fecharModalCliente();
         await carregarTudo();
+
+        // Se o cadastro foi aberto a partir da tela de Registrar Venda, já preenche os campos automaticamente
+        if (modalClienteOrigemVenda) {
+          const recemCriado = clientesCache.find(c => (c.nome || '').toLowerCase() === nome.toLowerCase());
+          if (recemCriado) {
+            selecionarClienteVenda(recemCriado.id);
+          } else {
+            document.getElementById('vendaClienteNome').value = nome;
+            document.getElementById('vendaClienteTel').value = telefone;
+            document.getElementById('vendaClienteEmail').value = email;
+            document.getElementById('vendaClienteNasc').value = nascimento || '';
+          }
+          modalClienteOrigemVenda = false;
+        }
 
       } catch (err) {
         Swal.fire('Erro ao Salvar', err.message, 'error');
