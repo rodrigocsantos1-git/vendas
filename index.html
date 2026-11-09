@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Vendas Barreto Corrêa</title>
   <!-- Metatags para redes sociais e WhatsApp -->
   <meta name="title" content="Vendas Barreto Corrêa">
@@ -608,6 +611,10 @@
     const SUPABASE_URL = "https://evqjlgfhdpisxxbvxelh.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_YLDCZL8qtWXqIFEeH7QzfQ_zf7v5gcQ";
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Polyfill defensivo para suportar tanto .table() quanto .from()
+    if (!sbClient.table) {
+      sbClient.table = function(tableName) { return sbClient.from(tableName); };
+    }
 
     let produtosCache = [];
     let clientesCache = [];
