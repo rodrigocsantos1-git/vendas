@@ -252,33 +252,43 @@
           </div>
         </div>
 
-        <!-- SEÇÃO DE GRÁFICOS (IDÊNTICA AO STREAMLIT / PYTHON) -->
+        <!-- SEÇÃO DE GRÁFICOS (IDÊNTICA AO STREAMLIT / PYTHON COM VALORES VISÍVEIS) -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Gráfico 1: Comparativo Financeiro Global -->
-          <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2">
-                <i class="fa-solid fa-chart-column text-orange-600 text-lg"></i>
-                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Comparativo Financeiro Global</h3>
+          <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-chart-column text-orange-600 text-lg"></i>
+                  <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Comparativo Financeiro Global</h3>
+                </div>
+                <span class="text-[11px] text-slate-400 font-semibold">Visão de Rentabilidade</span>
               </div>
-              <span class="text-[11px] text-slate-400 font-semibold">Visão de Rentabilidade</span>
+              <div class="h-64 sm:h-72 relative">
+                <canvas id="chartComparativoFinanceiro"></canvas>
+              </div>
             </div>
-            <div class="h-64 sm:h-72 relative">
-              <canvas id="chartComparativoFinanceiro"></canvas>
+            <!-- Resumo numérico direto abaixo do gráfico de barras -->
+            <div id="resumoComparativoCards" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-3 border-t border-slate-100">
             </div>
           </div>
 
           <!-- Gráfico 2: Distribuição por Categoria -->
-          <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2">
-                <i class="fa-solid fa-chart-pie text-amber-500 text-lg"></i>
-                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Distribuição do Investimento por Categoria</h3>
+          <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-chart-pie text-amber-500 text-lg"></i>
+                  <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Distribuição do Investimento por Categoria</h3>
+                </div>
+                <span class="text-[11px] text-slate-400 font-semibold">R$ e % de Custo</span>
               </div>
-              <span class="text-[11px] text-slate-400 font-semibold">% de Custo</span>
+              <div class="h-56 sm:h-60 relative flex items-center justify-center">
+                <canvas id="chartCategorias"></canvas>
+              </div>
             </div>
-            <div class="h-64 sm:h-72 relative flex items-center justify-center">
-              <canvas id="chartCategorias"></canvas>
+            <!-- Lista detalhada com os valores e percentuais de cada categoria -->
+            <div id="listaValoresCategorias" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-4 pt-3 border-t border-slate-100 max-h-48 overflow-y-auto custom-scrollbar pr-1">
             </div>
           </div>
         </div>
@@ -1214,7 +1224,7 @@
       }
     }
 
-    // ================= GRÁFICOS DO DASHBOARD (CHART.JS) =================
+    // ================= GRÁFICOS DO DASHBOARD (CHART.JS COM VALORES VISÍVEIS) =================
     function renderizarGraficosDashboard() {
       // 1. Gráfico de Comparativo Financeiro
       let totalPago = 0;
@@ -1232,14 +1242,54 @@
         totalLucro += parseFloat(v.lucro_total) || 0;
       });
 
+      // Renderiza resumo numérico abaixo do gráfico de barras
+      const divResumoComp = document.getElementById('resumoComparativoCards');
+      if (divResumoComp) {
+        const itensComp = [
+          { label: 'Quanto Paguei', valor: totalPago, cor: 'text-orange-600', bg: 'bg-orange-50 border-orange-200' },
+          { label: 'Valor Revista', valor: totalRevista, cor: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
+          { label: 'Total Faturado', valor: totalFaturado, cor: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+          { label: 'Lucro Realizado', valor: totalLucro, cor: 'text-purple-600', bg: 'bg-purple-50 border-purple-200' }
+        ];
+        divResumoComp.innerHTML = itensComp.map(item => `
+          <div class="p-2 rounded-xl border ${item.bg} text-center">
+            <span class="block text-[10px] font-bold text-slate-600 uppercase truncate">${item.label}</span>
+            <span class="block text-xs sm:text-sm font-black ${item.cor} mt-0.5">${formataBRL(item.valor)}</span>
+          </div>
+        `).join('');
+      }
+
       const ctxFin = document.getElementById('chartComparativoFinanceiro');
       if (ctxFin) {
         if (chartFinanceiroInstance) {
           chartFinanceiroInstance.destroy();
         }
 
+        const coresTextoBarras = ['#c2410c', '#1d4ed8', '#047857', '#7e22ce'];
+
+        // Plugin para desenhar os valores em R$ no topo de cada barra
+        const barValuesPlugin = {
+          id: 'barValuesPlugin',
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            ctx.save();
+            const meta = chart.getDatasetMeta(0);
+            meta.data.forEach((bar, index) => {
+              const valor = chart.data.datasets[0].data[index] || 0;
+              const texto = formataBRL(valor);
+              ctx.font = '800 11px Inter, sans-serif';
+              ctx.fillStyle = coresTextoBarras[index] || '#1e293b';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              ctx.fillText(texto, bar.x, bar.y - 6);
+            });
+            ctx.restore();
+          }
+        };
+
         chartFinanceiroInstance = new Chart(ctxFin, {
           type: 'bar',
+          plugins: [barValuesPlugin],
           data: {
             labels: ['Quanto Paguei (Custo)', 'Valor Revista (Tabela)', 'Total Faturado', 'Lucro Realizado'],
             datasets: [{
@@ -1264,6 +1314,9 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+              padding: { top: 28 }
+            },
             plugins: {
               legend: { display: false },
               tooltip: {
@@ -1294,7 +1347,7 @@
         });
       }
 
-      // 2. Gráfico Donut de Categorias
+      // 2. Gráfico Donut de Categorias (Ordenado do maior para o menor)
       const categoriasMap = {};
       produtosCache.forEach(p => {
         const cat = p.categoria || 'Outros';
@@ -1302,8 +1355,40 @@
         categoriasMap[cat] = (categoriasMap[cat] || 0) + custoTotalItem;
       });
 
-      const catLabels = Object.keys(categoriasMap);
-      const catValores = Object.values(categoriasMap);
+      const categoriasOrdenadas = Object.entries(categoriasMap)
+        .sort((a, b) => b[1] - a[1]);
+
+      const catLabels = categoriasOrdenadas.map(item => item[0]);
+      const catValores = categoriasOrdenadas.map(item => item[1]);
+      const somaTotalCategorias = catValores.reduce((acc, v) => acc + v, 0);
+
+      const coresPaleta = [
+        '#ea580c', '#3b82f6', '#10b981', '#f59e0b', 
+        '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', 
+        '#6366f1', '#84cc16', '#06b6d4', '#d97706',
+        '#64748b', '#a855f7', '#059669'
+      ];
+
+      // Renderiza a lista detalhada com os valores em R$ e % abaixo da rosca
+      const divListaCat = document.getElementById('listaValoresCategorias');
+      if (divListaCat) {
+        divListaCat.innerHTML = categoriasOrdenadas.map(([nomeCat, valorCat], idx) => {
+          const cor = coresPaleta[idx % coresPaleta.length];
+          const pct = somaTotalCategorias > 0 ? ((valorCat / somaTotalCategorias) * 100).toFixed(1) : '0.0';
+          return `
+            <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+              <div class="flex items-center gap-2 truncate pr-2">
+                <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: ${cor};"></span>
+                <span class="font-bold text-slate-700 truncate" title="${nomeCat}">${nomeCat}</span>
+              </div>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <span class="font-extrabold text-slate-900">${formataBRL(valorCat)}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-800">${pct}%</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
 
       const ctxCat = document.getElementById('chartCategorias');
       if (ctxCat) {
@@ -1311,18 +1396,55 @@
           chartCategoriasInstance.destroy();
         }
 
-        const coresPaleta = [
-          '#ea580c', '#f59e0b', '#10b981', '#3b82f6', 
-          '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#64748b'
-        ];
+        // Plugin para desenhar % nas fatias e Total no centro do Donut
+        const doughnutValuesPlugin = {
+          id: 'doughnutValuesPlugin',
+          afterDatasetsDraw(chart) {
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return;
+            ctx.save();
+
+            // 1. Texto central com o Valor Total do Investimento
+            const centerX = (chartArea.left + chartArea.right) / 2;
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '700 10px Inter, sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('TOTAL', centerX, centerY - 9);
+
+            ctx.font = '900 12px Inter, sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.fillText(formataBRL(somaTotalCategorias), centerX, centerY + 7);
+
+            // 2. Percentual dentro das fatias maiores (>= 6%)
+            const meta = chart.getDatasetMeta(0);
+            meta.data.forEach((arc, index) => {
+              const val = chart.data.datasets[0].data[index] || 0;
+              const pct = somaTotalCategorias > 0 ? (val / somaTotalCategorias) * 100 : 0;
+              if (pct >= 6) {
+                const pos = arc.tooltipPosition();
+                ctx.font = '800 10px Inter, sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+                ctx.shadowBlur = 3;
+                ctx.fillText(`${pct.toFixed(0)}%`, pos.x, pos.y);
+                ctx.shadowBlur = 0;
+              }
+            });
+
+            ctx.restore();
+          }
+        };
 
         chartCategoriasInstance = new Chart(ctxCat, {
           type: 'doughnut',
+          plugins: [doughnutValuesPlugin],
           data: {
             labels: catLabels,
             datasets: [{
               data: catValores,
-              backgroundColor: coresPaleta.slice(0, catLabels.length),
+              backgroundColor: catLabels.map((_, i) => coresPaleta[i % coresPaleta.length]),
               borderWidth: 2,
               borderColor: '#ffffff'
             }]
@@ -1330,18 +1452,16 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '55%',
+            cutout: '58%',
             plugins: {
               legend: {
-                position: 'bottom',
-                labels: { boxWidth: 12, font: { size: 10, weight: '600' } }
+                display: false
               },
               tooltip: {
                 callbacks: {
                   label: function(context) {
                     const val = context.raw;
-                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                    const pct = somaTotalCategorias > 0 ? ((val / somaTotalCategorias) * 100).toFixed(1) : 0;
                     return ` ${context.label}: ${formataBRL(val)} (${pct}%)`;
                   }
                 }
