@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendas Barreto Corrêa - Gestão Natura</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            natura: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              dark: '#7c2d12'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-orange-50 via-amber-50 to-stone-100 min-h-screen text-slate-800 pb-12">
+
+  <!-- Top Navbar -->
+  <nav class="bg-white/90 backdrop-blur sticky top-0 z-40 border-b border-orange-100 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+            <i class="fa-solid fa-spa text-lg"></i>
+          </div>
+          <div>
+            <h1 class="font-extrabold text-lg sm:text-xl text-slate-800 tracking-tight leading-tight">
+              Vendas <span class="text-orange-600">Barreto Corrêa</span>
+            </h1>
+            <p class="text-[11px] font-medium text-slate-600 flex items-center gap-1.5">
+              <span>Gestão de Produtos Natura</span>
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span id="supabaseStatus" class="text-emerald-600 font-semibold">Supabase Nuvem</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="flex items-center gap-2">
+          <button onclick="carregarTudo(true)" title="Atualizar Dados" class="p-2 text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition">
+            <i class="fa-solid fa-arrows-rotate text-sm" id="syncIcon"></i>
+          </button>
+          <button onclick="mudarAba('venda')" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-md shadow-orange-600/25 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span class="hidden sm:inline">Nova Venda</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Navigation Tabs -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+    <div class="flex overflow-x-auto gap-2 p-1.5 bg-white/80 rounded-2xl border border-orange-100 shadow-sm scrollbar-none">
+      <button onclick="mudarAba('dashboard')" id="tabBtn-dashboard" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition bg-orange-600 text-white shadow-sm">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Visão Geral</span>
+      </button>
+      <button onclick="mudarAba('produtos')" id="tabBtn-produtos" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+        <i class="fa-solid fa-box-open"></i>
+        <span>Estoque & Produtos</span>
+        <span id="badgeEstoque" class="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-extrabold">0</span>
+      </button>
+      <button onclick="mudarAba('venda')" id="tabBtn-venda" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+        <i class="fa-solid fa-cash-register"></i>
+        <span>Registrar Venda</span>
+      </button>
+      <button onclick="mudarAba('clientes')" id="tabBtn-clientes" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+        <i class="fa-solid fa-users"></i>
+        <span>Clientes</span>
+        <span id="badgeClientes" class="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-extrabold">0</span>
+      </button>
+      <button onclick="mudarAba('historico')" id="tabBtn-historico" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Histórico de Vendas</span>
+      </button>
+      <button onclick="mudarAba('novo-produto')" id="tabBtn-novo-produto" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+        <i class="fa-solid fa-plus"></i>
+        <span>Novo Produto</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+
+    <!-- TAB: DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content space-y-6">
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total em Estoque</p>
+            <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1" id="kpiEstoqueQtd">0</p>
+            <p class="text-[11px] text-slate-600 mt-0.5" id="kpiEstoqueItens">0 itens cadastrados</p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-cubes"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Custo do Estoque</p>
+            <p class="text-xl sm:text-2xl font-extrabold text-slate-800 mt-1" id="kpiEstoqueValor">R$ 0,00</p>
+            <p class="text-[11px] text-emerald-600 font-medium mt-0.5">Valor pago na nota</p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Faturado</p>
+            <p class="text-xl sm:text-2xl font-extrabold text-emerald-600 mt-1" id="kpiTotalVendas">R$ 0,00</p>
+            <p class="text-[11px] text-slate-600 mt-0.5" id="kpiVendasQtd">0 vendas</p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-sack-dollar"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Lucro Estimado</p>
+            <p class="text-xl sm:text-2xl font-extrabold text-blue-600 mt-1" id="kpiLucroTotal">R$ 0,00</p>
+            <p class="text-[11px] text-slate-600 mt-0.5" id="kpiMargemMedia">Margem: 0%</p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Birthday & Quick Attention Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Aniversariantes do Mês -->
+        <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-cake-candles text-pink-500 text-lg"></i>
+              <h3 class="font-bold text-slate-800 text-base">Aniversariantes do Mês</h3>
+            </div>
+            <span id="mesAtualBadge" class="text-xs font-bold px-2 py-0.5 bg-pink-50 text-pink-600 rounded-full"></span>
+          </div>
+          <div id="listaAniversariantes" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+            <p class="text-xs text-slate-600 text-center py-4">Nenhum aniversariante cadastrado para este mês.</p>
+          </div>
+        </div>
+
+        <!-- Produtos em Baixo Estoque -->
+        <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-triangle-exclamation text-amber-500 text-lg"></i>
+              <h3 class="font-bold text-slate-800 text-base">Atenção ao Estoque</h3>
+            </div>
+            <span class="text-xs font-bold px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full">Últimas unidades</span>
+          </div>
+          <div id="listaBaixoEstoque" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+            <p class="text-xs text-slate-600 text-center py-4">Carregando estoque...</p>
+          </div>
+        </div>
+
+        <!-- Atalhos Rápidos -->
+        <div class="bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl p-5 text-white shadow-lg shadow-orange-500/20 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-200 text-lg"></i>
+              <h3 class="font-bold text-lg">Vendas Barreto Corrêa</h3>
+            </div>
+            <p class="text-orange-100 text-xs leading-relaxed">
+              Sistema conectado diretamente ao seu banco na nuvem Supabase. Seus dados estão protegidos, sincronizados e disponíveis em tempo real em qualquer dispositivo.
+            </p>
+          </div>
+          <div class="mt-4 pt-4 border-t border-white/20 flex flex-col gap-2">
+            <button onclick="mudarAba('venda')" class="w-full bg-white text-orange-700 hover:bg-orange-50 font-bold text-xs py-2.5 rounded-xl shadow transition text-center">
+              <i class="fa-solid fa-cash-register mr-1"></i> Registrar Nova Venda
+            </button>
+            <button onclick="mudarAba('produtos')" class="w-full bg-white/20 hover:bg-white/30 text-white font-semibold text-xs py-2 rounded-xl transition text-center">
+              <i class="fa-solid fa-search mr-1"></i> Consultar Preços na Revista
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: PRODUTOS & ESTOQUE -->
+    <div id="tab-produtos" class="tab-content hidden space-y-4">
+      <div class="bg-white rounded-2xl border border-orange-100 p-4 sm:p-5 shadow-sm">
+        <!-- Filter bar -->
+        <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-4">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-search absolute left-3.5 top-3 text-slate-600 text-sm"></i>
+            <input type="text" id="filtroProduto" oninput="filtrarProdutos()" placeholder="Buscar por descrição, código ou categoria..." class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition">
+          </div>
+          <div class="flex gap-2">
+            <select id="filtroCategoria" onchange="filtrarProdutos()" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+              <option value="">Todas as Categorias</option>
+            </select>
+            <select id="filtroStatusEstoque" onchange="filtrarProdutos()" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+              <option value="todos">Todos</option>
+              <option value="com_estoque">Com Estoque (> 0)</option>
+              <option value="zerados">Esgotados (= 0)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+          <table class="w-full text-left text-xs text-slate-700">
+            <thead class="bg-orange-50/70 text-slate-600 uppercase text-[10px] font-bold border-b border-orange-100">
+              <tr>
+                <th class="py-3 px-3">Cód.</th>
+                <th class="py-3 px-3">Descrição do Produto</th>
+                <th class="py-3 px-3">Categoria</th>
+                <th class="py-3 px-2 text-center">Pág. Revista</th>
+                <th class="py-3 px-3 text-right">Preço Revista</th>
+                <th class="py-3 px-3 text-right">Preço Promo</th>
+                <th class="py-3 px-3 text-right">Custo Pago</th>
+                <th class="py-3 px-3 text-right">Venda Sugerida</th>
+                <th class="py-3 px-2 text-center">Estoque</th>
+                <th class="py-3 px-3 text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaProdutosCorpo" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="10" class="py-8 text-center text-slate-600">Carregando produtos do Supabase...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: REGISTRAR VENDA -->
+    <div id="tab-venda" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Formulário -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-orange-100 p-5 sm:p-6 shadow-sm">
+          <h2 class="font-extrabold text-lg text-slate-800 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-cash-register text-orange-600"></i>
+            Registrar Nova Venda
+          </h2>
+
+          <form id="formVenda" onsubmit="salvarVenda(event)" class="space-y-4">
+            <!-- Produto Selector -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Selecione o Produto *</label>
+              <select id="vendaProdutoId" onchange="atualizarDadosProdutoSelecionado()" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <option value="">-- Selecione o item --</option>
+              </select>
+            </div>
+
+            <!-- Produto preview info box -->
+            <div id="vendaInfoBox" class="hidden p-3.5 bg-orange-50/70 border border-orange-100 rounded-xl text-xs space-y-1 text-slate-700">
+              <div class="flex justify-between">
+                <span>Custo Unitário Pago: <b id="previewCusto" class="text-slate-800">R$ 0,00</b></span>
+                <span>Preço na Revista: <b id="previewRevista" class="text-orange-700">R$ 0,00</b></span>
+              </div>
+              <div class="flex justify-between">
+                <span>Estoque Disponível: <b id="previewEstoque" class="text-emerald-700">0 unid.</b></span>
+                <span>Página do Catálogo: <b id="previewPagina">Pág. -</b></span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Quantidade *</label>
+                <input type="number" id="vendaQtd" min="1" value="1" oninput="calcularTotaisVenda()" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-center font-bold focus:ring-2 focus:ring-orange-500">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Preço Cobrado (Unit.) *</label>
+                <input type="number" step="0.01" id="vendaPrecoUnit" min="0" oninput="calcularTotaisVenda()" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-right font-bold text-orange-600 focus:ring-2 focus:ring-orange-500">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Forma de Pagamento</label>
+                <select id="vendaFormaPagamento" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500">
+                  <option value="Pix">Pix</option>
+                  <option value="Dinheiro">Dinheiro</option>
+                  <option value="Cartão de Crédito">Cartão de Crédito</option>
+                  <option value="Cartão de Débito">Cartão de Débito</option>
+                  <option value="A Prazo / Fiado">A Prazo / Fiado</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Dados do Cliente -->
+            <div class="pt-3 border-t border-slate-100">
+              <h3 class="text-xs font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-user"></i> Dados do Cliente
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nome do Cliente *</label>
+                  <input type="text" id="vendaClienteNome" list="clientesList" placeholder="Ex: Maria da Silva" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500">
+                  <datalist id="clientesList"></datalist>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Telefone / WhatsApp</label>
+                  <input type="tel" id="vendaClienteTel" placeholder="(11) 99999-9999" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">E-mail</label>
+                  <input type="email" id="vendaClienteEmail" placeholder="cliente@email.com" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Data de Nascimento (Aniversário)</label>
+                  <input type="date" id="vendaClienteNasc" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500">
+                </div>
+              </div>
+            </div>
+
+            <!-- Status do Pagamento e Observações -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Status do Pagamento</label>
+                <select id="vendaStatusPagamento" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                  <option value="Recebido">Recebido (Pago)</option>
+                  <option value="Pendente">Pendente</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Observações da Venda</label>
+                <input type="text" id="vendaObs" placeholder="Ex: Embalado para presente" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+              </div>
+            </div>
+
+            <!-- Action button -->
+            <div class="pt-4">
+              <button type="submit" id="btnSalvarVenda" class="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-orange-600/30 transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-check-circle text-base"></i>
+                <span>Confirmar e Gravar Venda no Supabase</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Resumo da Venda em Tempo Real -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between">
+          <div>
+            <h3 class="font-extrabold text-base text-orange-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-receipt"></i> Resumo da Venda
+            </h3>
+
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between pb-2 border-b border-slate-700">
+                <span class="text-slate-400">Total a Cobrar:</span>
+                <span class="font-extrabold text-2xl text-emerald-400" id="resumoTotalVenda">R$ 0,00</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-slate-400">Custo Total Pago:</span>
+                <span class="font-semibold text-slate-300" id="resumoCustoTotal">R$ 0,00</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-slate-400">Lucro Líquido:</span>
+                <span class="font-bold text-lg text-emerald-400" id="resumoLucroTotal">R$ 0,00</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-slate-400">Margem sobre a Venda:</span>
+                <span class="font-bold text-amber-300" id="resumoMargem">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-700 text-xs text-slate-400 space-y-1">
+            <p><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Gravado direto no banco Supabase</p>
+            <p><i class="fa-solid fa-rotate text-blue-400 mr-1"></i> Baixa automática no estoque</p>
+            <p><i class="fa-solid fa-address-book text-pink-400 mr-1"></i> Cliente adicionado à carteira</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CLIENTES -->
+    <div id="tab-clientes" class="tab-content hidden space-y-4">
+      <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+          <div>
+            <h2 class="font-extrabold text-lg text-slate-800">Carteira de Clientes</h2>
+            <p class="text-xs text-slate-600">Histórico de compradores e contatos para envio de promoções e felicitações.</p>
+          </div>
+          <input type="text" id="filtroCliente" oninput="filtrarClientes()" placeholder="Buscar cliente por nome ou telefone..." class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full sm:w-64 focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+          <table class="w-full text-left text-xs text-slate-700">
+            <thead class="bg-orange-50/70 text-slate-600 uppercase text-[10px] font-bold border-b border-orange-100">
+              <tr>
+                <th class="py-3 px-4">Nome do Cliente</th>
+                <th class="py-3 px-4">Telefone / WhatsApp</th>
+                <th class="py-3 px-4">E-mail</th>
+                <th class="py-3 px-3 text-center">Data de Nascimento</th>
+                <th class="py-3 px-4 text-center">Ações Rápidas</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaClientesCorpo" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="5" class="py-8 text-center text-slate-600">Nenhum cliente cadastrado ainda.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: HISTÓRICO DE VENDAS -->
+    <div id="tab-historico" class="tab-content hidden space-y-4">
+      <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="font-extrabold text-lg text-slate-800">Histórico Completo de Vendas</h2>
+            <p class="text-xs text-slate-600">Todas as transações registradas no Supabase com opção de estorno.</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+          <table class="w-full text-left text-xs text-slate-700">
+            <thead class="bg-orange-50/70 text-slate-600 uppercase text-[10px] font-bold border-b border-orange-100">
+              <tr>
+                <th class="py-3 px-3">Data/Hora</th>
+                <th class="py-3 px-3">Produto</th>
+                <th class="py-3 px-2 text-center">Qtd</th>
+                <th class="py-3 px-3 text-right">Valor Total</th>
+                <th class="py-3 px-3 text-right">Lucro</th>
+                <th class="py-3 px-3">Cliente</th>
+                <th class="py-3 px-3">Pagamento</th>
+                <th class="py-3 px-2 text-center">Status</th>
+                <th class="py-3 px-3 text-center">Estornar</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaVendasCorpo" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="9" class="py-8 text-center text-slate-600">Nenhuma venda registrada ainda.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: NOVO PRODUTO -->
+    <div id="tab-novo-produto" class="tab-content hidden">
+      <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-orange-100 p-6 shadow-sm">
+        <h2 class="font-extrabold text-lg text-slate-800 mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-box-open text-orange-600"></i>
+          Cadastrar Novo Produto no Estoque
+        </h2>
+        <p class="text-xs text-slate-600 mb-6">Adicione itens comprados ou produtos avulsos à base de dados do Supabase.</p>
+
+        <form id="formNovoProduto" onsubmit="salvarNovoProduto(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Código Natura *</label>
+              <input type="text" id="novoCodigo" required placeholder="Ex: 111197" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Descrição Completa *</label>
+              <input type="text" id="novoDescricao" required placeholder="Ex: ESSENCIAL EXCLUSIVO MASCULINO 100ML" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Categoria</label>
+              <input type="text" id="novoCategoria" placeholder="Ex: PERFUMARIA" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Qtd Comprada *</label>
+              <input type="number" id="novoQtd" min="1" value="1" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-center">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Custo Pago (Unit.) *</label>
+              <input type="number" step="0.01" id="novoCusto" required placeholder="0.00" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-right">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Preço Revista</label>
+              <input type="number" step="0.01" id="novoPrecoRevista" placeholder="0.00" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-right">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Preço Revista Promo</label>
+              <input type="number" step="0.01" id="novoPrecoPromo" placeholder="0.00" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-right">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Página do Catálogo</label>
+              <input type="number" id="novoPagina" placeholder="Ex: 45" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-center">
+            </div>
+          </div>
+
+          <div class="pt-4">
+            <button type="submit" class="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-sm rounded-xl shadow-md transition">
+              Salvar Produto no Supabase
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Script Principal de Integração Supabase -->
+  <script>
+    // Configurações do Supabase
+    const SUPABASE_URL = "https://evqjlgfhdpisxxbvxelh.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_YLDCZL8qtWXqIFEeH7QzfQ_zf7v5gcQ";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Estado Local da Aplicação
+    let produtosCache = [];
+    let clientesCache = [];
+    let vendasCache = [];
+
+    const NOMES_MESES = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    // Formata Moeda BRL
+    function formataBRL(v) {
+      const num = parseFloat(v) || 0;
+      return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    // Inicialização
+    document.addEventListener("DOMContentLoaded", () => {
+      const mesAtual = new Date().getMonth();
+      document.getElementById('mesAtualBadge').textContent = NOMES_MESES[mesAtual];
+      carregarTudo();
+    });
+
+    // Alternar Abas
+    function mudarAba(nome) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-orange-600', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-600', 'hover:text-orange-600', 'hover:bg-orange-50');
+      });
+
+      const targetContent = document.getElementById(`tab-${nome}`);
+      const targetBtn = document.getElementById(`tabBtn-${nome}`);
+      if (targetContent) targetContent.classList.remove('hidden');
+      if (targetBtn) {
+        targetBtn.classList.remove('text-slate-600', 'hover:text-orange-600', 'hover:bg-orange-50');
+        targetBtn.classList.add('bg-orange-600', 'text-white', 'shadow-sm');
+      }
+    }
+
+    // Carregar todos os dados do Supabase
+    async function carregarTudo(comAlerta = false) {
+      const syncIcon = document.getElementById('syncIcon');
+      if (syncIcon) syncIcon.classList.add('fa-spin');
+
+      try {
+        // 1. Produtos
+        const resProds = await supabase.table('produtos').select('*').order('descricao');
+        if (resProds.error) throw resProds.error;
+        produtosCache = resProds.data || [];
+
+        // 2. Clientes
+        const resClientes = await supabase.table('clientes').select('*').order('nome');
+        if (resClientes.error) throw resClientes.error;
+        clientesCache = resClientes.data || [];
+
+        // 3. Vendas
+        const resVendas = await supabase.table('vendas').select('*').order('data_venda', { ascending: false });
+        if (resVendas.error) throw resVendas.error;
+        vendasCache = resVendas.data || [];
+
+        // Renderizar componentes
+        renderizarDashboard();
+        renderizarTabelaProdutos(produtosCache);
+        renderizarCategorias();
+        renderizarSelectVenda();
+        renderizarClientes(clientesCache);
+        renderizarHistoricoVendas(vendasCache);
+
+        if (comAlerta) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Sincronizado!',
+            text: 'Dados atualizados em tempo real com o Supabase.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro de Conexão',
+          text: 'Falha ao buscar dados no Supabase: ' + err.message
+        });
+      } finally {
+        if (syncIcon) syncIcon.classList.remove('fa-spin');
+      }
+    }
+
+    // Renderizar Dashboard
+    function renderizarDashboard() {
+      let totalEstoqueQtd = 0;
+      let totalEstoqueCusto = 0;
+      produtosCache.forEach(p => {
+        const qtd = p.quantidade_estoque || 0;
+        totalEstoqueQtd += qtd;
+        totalEstoqueCusto += qtd * (p.vl_unit_pago || 0);
+      });
+
+      let totalVendidoValor = 0;
+      let totalLucro = 0;
+      vendasCache.forEach(v => {
+        totalVendidoValor += parseFloat(v.vl_total_venda) || 0;
+        totalLucro += parseFloat(v.lucro_total) || 0;
+      });
+
+      const margemMedia = totalVendidoValor > 0 ? ((totalLucro / totalVendidoValor) * 100).toFixed(1) : 0;
+
+      document.getElementById('kpiEstoqueQtd').textContent = totalEstoqueQtd;
+      document.getElementById('kpiEstoqueItens').textContent = `${produtosCache.length} produtos cadastrados`;
+      document.getElementById('kpiEstoqueValor').textContent = formataBRL(totalEstoqueCusto);
+      document.getElementById('kpiTotalVendas').textContent = formataBRL(totalVendidoValor);
+      document.getElementById('kpiVendasQtd').textContent = `${vendasCache.length} vendas registradas`;
+      document.getElementById('kpiLucroTotal').textContent = formataBRL(totalLucro);
+      document.getElementById('kpiMargemMedia').textContent = `Margem média: ${margemMedia}%`;
+
+      document.getElementById('badgeEstoque').textContent = totalEstoqueQtd;
+      document.getElementById('badgeClientes').textContent = clientesCache.length;
+
+      // Aniversariantes do Mês Atual
+      const mesAtualNum = new Date().getMonth() + 1;
+      const aniversariantes = clientesCache.filter(c => {
+        if (!c.data_nascimento) return false;
+        const partes = c.data_nascimento.split('-');
+        return parseInt(partes[1]) === mesAtualNum;
+      });
+
+      const divAniversario = document.getElementById('listaAniversariantes');
+      if (aniversariantes.length === 0) {
+        divAniversario.innerHTML = `<p class="text-xs text-slate-600 text-center py-4">Nenhum aniversariante em ${NOMES_MESES[mesAtualNum - 1]}.</p>`;
+      } else {
+        divAniversario.innerHTML = aniversariantes.map(c => {
+          const partes = c.data_nascimento.split('-');
+          const dia = partes[2];
+          const telFormatado = c.telefone ? c.telefone.replace(/\D/g, '') : '';
+          const msgWhats = encodeURIComponent(`Olá ${c.nome}! Desejo um feliz aniversário repleto de bênçãos! Temos condições especiais da Natura para comemorar seu dia.`);
+          const linkWhats = telFormatado ? `https://wa.me/55${telFormatado}?text=${msgWhats}` : '#';
+
+          return `
+            <div class="flex items-center justify-between p-2.5 rounded-xl bg-pink-50/60 border border-pink-100">
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center font-bold text-xs">${dia}</span>
+                <div>
+                  <p class="font-bold text-xs text-slate-800">${c.nome}</p>
+                  <p class="text-[10px] text-slate-600">${c.telefone || 'Sem telefone'}</p>
+                </div>
+              </div>
+              ${telFormatado ? `
+                <a href="${linkWhats}" target="_blank" class="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-sm transition">
+                  <i class="fa-brands fa-whatsapp"></i> Parabenizar
+                </a>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Baixo Estoque
+      const baixoEstoque = produtosCache.filter(p => (p.quantidade_estoque || 0) <= 1).slice(0, 5);
+      const divBaixo = document.getElementById('listaBaixoEstoque');
+      if (baixoEstoque.length === 0) {
+        divBaixo.innerHTML = `<p class="text-xs text-emerald-600 text-center py-4">Todos os produtos possuem bom estoque!</p>`;
+      } else {
+        divBaixo.innerHTML = baixoEstoque.map(p => {
+          const qtd = p.quantidade_estoque || 0;
+          return `
+            <div class="flex items-center justify-between p-2 rounded-xl ${qtd === 0 ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}">
+              <div class="truncate max-w-[170px]">
+                <p class="font-bold text-xs text-slate-800 truncate">${p.descricao}</p>
+                <p class="text-[10px] text-slate-600">Cód: ${p.codigo}</p>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${qtd === 0 ? 'bg-red-200 text-red-800' : 'bg-amber-200 text-amber-800'}">
+                ${qtd === 0 ? 'Esgotado' : `${qtd} unid.`}
+              </span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // Renderizar Tabela de Produtos
+    function renderizarTabelaProdutos(produtos) {
+      const tbody = document.getElementById('tabelaProdutosCorpo');
+      if (!produtos || produtos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-600">Nenhum produto encontrado.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = produtos.map(p => {
+        const estoque = p.quantidade_estoque || 0;
+        const precoRevista = p.preco_revista ? formataBRL(p.preco_revista) : '-';
+        const precoPromo = p.preco_revista_promo ? `<span class="text-emerald-600 font-bold">${formataBRL(p.preco_revista_promo)}</span>` : '-';
+        const custo = formataBRL(p.vl_unit_pago);
+        const sugerido = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
+        const pagina = p.pagina_revista ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">Pág. ${p.pagina_revista}</span>` : '-';
+
+        return `
+          <tr class="hover:bg-orange-50/40 transition">
+            <td class="py-2.5 px-3 font-mono font-bold text-slate-600">${p.codigo}</td>
+            <td class="py-2.5 px-3 font-semibold text-slate-800">${p.descricao}</td>
+            <td class="py-2.5 px-3 text-slate-600"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-medium">${p.categoria || 'Geral'}</span></td>
+            <td class="py-2.5 px-2 text-center">${pagina}</td>
+            <td class="py-2.5 px-3 text-right font-medium text-slate-600">${precoRevista}</td>
+            <td class="py-2.5 px-3 text-right">${precoPromo}</td>
+            <td class="py-2.5 px-3 text-right text-slate-600">${custo}</td>
+            <td class="py-2.5 px-3 text-right font-extrabold text-orange-600">${sugerido}</td>
+            <td class="py-2.5 px-2 text-center">
+              <span class="px-2 py-0.5 rounded-full text-xs font-extrabold ${estoque > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+                ${estoque}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 text-center">
+              ${estoque > 0 ? `
+                <button onclick="iniciarVendaDireta('${p.id}')" class="px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 mx-auto">
+                  <i class="fa-solid fa-cart-shopping"></i> Vender
+                </button>
+              ` : `
+                <span class="text-[10px] text-slate-600 italic">Sem estoque</span>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Filtrar Produtos
+    function filtrarProdutos() {
+      const busca = document.getElementById('filtroProduto').value.toLowerCase().trim();
+      const cat = document.getElementById('filtroCategoria').value;
+      const status = document.getElementById('filtroStatusEstoque').value;
+
+      const filtrados = produtosCache.filter(p => {
+        const matchBusca = !busca || p.descricao.toLowerCase().includes(busca) || p.codigo.toLowerCase().includes(busca) || (p.categoria && p.categoria.toLowerCase().includes(busca));
+        const matchCat = !cat || p.categoria === cat;
+        let matchStatus = true;
+        if (status === 'com_estoque') matchStatus = (p.quantidade_estoque || 0) > 0;
+        if (status === 'zerados') matchStatus = (p.quantidade_estoque || 0) <= 0;
+
+        return matchBusca && matchCat && matchStatus;
+      });
+
+      renderizarTabelaProdutos(filtrados);
+    }
+
+    // Preenche categorias no select
+    function renderizarCategorias() {
+      const select = document.getElementById('filtroCategoria');
+      const cats = [...new Set(produtosCache.map(p => p.categoria).filter(Boolean))].sort();
+      select.innerHTML = '<option value="">Todas as Categorias</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    // Preenche Select de Venda
+    function renderizarSelectVenda() {
+      const select = document.getElementById('vendaProdutoId');
+      const produtosComEstoque = produtosCache.filter(p => (p.quantidade_estoque || 0) > 0);
+      select.innerHTML = '<option value="">-- Selecione o produto --</option>' + produtosComEstoque.map(p => {
+        const preco = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
+        return `<option value="${p.id}">${p.codigo} - ${p.descricao} (Estoque: ${p.quantidade_estoque} | ${preco})</option>`;
+      }).join('');
+
+      // Preenche datalist de clientes
+      const dl = document.getElementById('clientesList');
+      dl.innerHTML = clientesCache.map(c => `<option value="${c.nome}">${c.telefone || ''}</option>`).join('');
+    }
+
+    // Ao selecionar produto no formulário de venda
+    function atualizarDadosProdutoSelecionado() {
+      const id = document.getElementById('vendaProdutoId').value;
+      const p = produtosCache.find(x => String(x.id) === String(id));
+      const infoBox = document.getElementById('vendaInfoBox');
+
+      if (!p) {
+        infoBox.classList.add('hidden');
+        document.getElementById('vendaPrecoUnit').value = '';
+        calcularTotaisVenda();
+        return;
+      }
+
+      infoBox.classList.remove('hidden');
+      document.getElementById('previewCusto').textContent = formataBRL(p.vl_unit_pago);
+      document.getElementById('previewRevista').textContent = p.preco_revista ? formataBRL(p.preco_revista) : formataBRL(p.vl_unit_sugerido);
+      document.getElementById('previewEstoque').textContent = `${p.quantidade_estoque} unid.`;
+      document.getElementById('previewPagina').textContent = p.pagina_revista ? `Pág. ${p.pagina_revista}` : 'Sem pág.';
+
+      const precoSugerido = p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido || 0;
+      document.getElementById('vendaPrecoUnit').value = precoSugerido.toFixed(2);
+      document.getElementById('vendaQtd').max = p.quantidade_estoque;
+      document.getElementById('vendaQtd').value = 1;
+
+      calcularTotaisVenda();
+    }
+
+    // Iniciar venda a partir de um botão na tabela
+    function iniciarVendaDireta(id) {
+      mudarAba('venda');
+      const select = document.getElementById('vendaProdutoId');
+      select.value = id;
+      atualizarDadosProdutoSelecionado();
+    }
+
+    // Calcular Totais e Margem em Tempo Real
+    function calcularTotaisVenda() {
+      const id = document.getElementById('vendaProdutoId').value;
+      const p = produtosCache.find(x => String(x.id) === String(id));
+      const qtd = parseInt(document.getElementById('vendaQtd').value) || 0;
+      const precoUnit = parseFloat(document.getElementById('vendaPrecoUnit').value) || 0;
+
+      const totalVenda = qtd * precoUnit;
+      const custoUnit = p ? (p.vl_unit_pago || 0) : 0;
+      const totalCusto = qtd * custoUnit;
+      const totalLucro = totalVenda - totalCusto;
+      const margem = totalVenda > 0 ? ((totalLucro / totalVenda) * 100).toFixed(1) : 0;
+
+      document.getElementById('resumoTotalVenda').textContent = formataBRL(totalVenda);
+      document.getElementById('resumoCustoTotal').textContent = formataBRL(totalCusto);
+      document.getElementById('resumoLucroTotal').textContent = formataBRL(totalLucro);
+      document.getElementById('resumoMargem').textContent = `${margem}%`;
+    }
+
+    // Salvar Venda no Supabase
+    async function salvarVenda(e) {
+      e.preventDefault();
+      const pId = document.getElementById('vendaProdutoId').value;
+      const p = produtosCache.find(x => String(x.id) === String(pId));
+      if (!p) {
+        Swal.fire('Atenção', 'Selecione um produto válido.', 'warning');
+        return;
+      }
+
+      const qtd = parseInt(document.getElementById('vendaQtd').value) || 0;
+      if (qtd <= 0 || qtd > p.quantidade_estoque) {
+        Swal.fire('Estoque Insuficiente', `Quantidade deve ser entre 1 e ${p.quantidade_estoque}.`, 'warning');
+        return;
+      }
+
+      const precoUnit = parseFloat(document.getElementById('vendaPrecoUnit').value) || 0;
+      const totalVenda = qtd * precoUnit;
+      const custoUnit = p.vl_unit_pago || 0;
+      const lucroTotal = totalVenda - (qtd * custoUnit);
+      const clienteNome = document.getElementById('vendaClienteNome').value.trim();
+      const clienteTel = document.getElementById('vendaClienteTel').value.trim();
+      const clienteEmail = document.getElementById('vendaClienteEmail').value.trim();
+      const clienteNasc = document.getElementById('vendaClienteNasc').value || null;
+      const formaPag = document.getElementById('vendaFormaPagamento').value;
+      const statusPag = document.getElementById('vendaStatusPagamento').value;
+      const obs = document.getElementById('vendaObs').value.trim();
+
+      const btn = document.getElementById('btnSalvarVenda');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Gravando venda no Supabase...`;
+
+      try {
+        // 1. Gravar Venda no Supabase
+        const vendaPayload = {
+          codigo: p.codigo,
+          descricao: p.descricao,
+          quantidade: qtd,
+          vl_unit_pago: custoUnit,
+          vl_unit_venda: precoUnit,
+          desconto_repassado_unit: 0,
+          vl_total_venda: totalVenda,
+          lucro_total: lucroTotal,
+          cliente: clienteNome,
+          cliente_telefone: clienteTel,
+          cliente_email: clienteEmail,
+          cliente_nascimento: clienteNasc,
+          forma_pagamento: formaPag,
+          status_pagamento: statusPag,
+          observacoes: obs
+        };
+
+        const resVenda = await supabase.table('vendas').insert(vendaPayload);
+        if (resVenda.error) throw resVenda.error;
+
+        // 2. Decrementar Estoque do Produto no Supabase
+        const novoEstoque = (p.quantidade_estoque || 0) - qtd;
+        const novaQtdVendida = (p.quantidade_vendida || 0) + qtd;
+        const resProdUpdate = await supabase.table('produtos').update({
+          quantidade_estoque: novoEstoque,
+          quantidade_vendida: novaQtdVendida
+        }).eq('id', p.id);
+        if (resProdUpdate.error) throw resProdUpdate.error;
+
+        // 3. Cadastrar ou Atualizar Cliente
+        if (clienteNome) {
+          const clienteExistente = clientesCache.find(c => c.nome.toLowerCase() === clienteNome.toLowerCase());
+          if (!clienteExistente) {
+            await supabase.table('clientes').insert({
+              nome: clienteNome,
+              telefone: clienteTel,
+              email: clienteEmail,
+              data_nascimento: clienteNasc,
+              observacoes: `Primeira compra: ${p.descricao}`
+            });
+          } else if (clienteTel || clienteEmail || clienteNasc) {
+            await supabase.table('clientes').update({
+              telefone: clienteTel || clienteExistente.telefone,
+              email: clienteEmail || clienteExistente.email,
+              data_nascimento: clienteNasc || clienteExistente.data_nascimento
+            }).eq('id', clienteExistente.id);
+          }
+        }
+
+        // Recarregar dados
+        await carregarTudo();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Venda Registrada com Sucesso!',
+          html: `<b>${qtd}x ${p.descricao}</b><br>Total: <b>${formataBRL(totalVenda)}</b><br>Cliente: <b>${clienteNome}</b><br><br><small class="text-emerald-600">Estoque atualizado no Supabase!</small>`,
+          confirmButtonColor: '#ea580c'
+        });
+
+        // Limpar formulário
+        document.getElementById('formVenda').reset();
+        document.getElementById('vendaInfoBox').classList.add('hidden');
+        calcularTotaisVenda();
+
+      } catch (err) {
+        console.error("Erro ao salvar venda:", err);
+        Swal.fire('Erro ao Gravar Venda', err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-check-circle text-base"></i> Confirmar e Gravar Venda no Supabase`;
+      }
+    }
+
+    // Renderizar Tabela de Clientes
+    function renderizarClientes(clientes) {
+      const tbody = document.getElementById('tabelaClientesCorpo');
+      if (!clientes || clientes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-600">Nenhum cliente cadastrado ainda.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = clientes.map(c => {
+        const telFormatado = c.telefone ? c.telefone.replace(/\D/g, '') : '';
+        const msgWhats = encodeURIComponent(`Olá ${c.nome}! Tudo bem? Passando para te desejar uma excelente semana e apresentar as novidades da Natura.`);
+        const linkWhats = telFormatado ? `https://wa.me/55${telFormatado}?text=${msgWhats}` : null;
+
+        let nascimentoStr = '-';
+        if (c.data_nascimento) {
+          const partes = c.data_nascimento.split('-');
+          nascimentoStr = `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        return `
+          <tr class="hover:bg-orange-50/40 transition">
+            <td class="py-3 px-4 font-bold text-slate-800">${c.nome}</td>
+            <td class="py-3 px-4 text-slate-600 font-mono">${c.telefone || '-'}</td>
+            <td class="py-3 px-4 text-slate-600">${c.email || '-'}</td>
+            <td class="py-3 px-3 text-center text-slate-600">${nascimentoStr}</td>
+            <td class="py-3 px-4 text-center">
+              ${linkWhats ? `
+                <a href="${linkWhats}" target="_blank" class="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm transition">
+                  <i class="fa-brands fa-whatsapp"></i> Conversar
+                </a>
+              ` : `
+                <span class="text-[10px] text-slate-600">Sem WhatsApp</span>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Filtrar Clientes
+    function filtrarClientes() {
+      const busca = document.getElementById('filtroCliente').value.toLowerCase().trim();
+      const filtrados = clientesCache.filter(c => {
+        return !busca || c.nome.toLowerCase().includes(busca) || (c.telefone && c.telefone.includes(busca));
+      });
+      renderizarClientes(filtrados);
+    }
+
+    // Renderizar Histórico de Vendas
+    function renderizarHistoricoVendas(vendas) {
+      const tbody = document.getElementById('tabelaVendasCorpo');
+      if (!vendas || vendas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-600">Nenhuma venda registrada até o momento.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = vendas.map(v => {
+        let dataStr = '-';
+        if (v.data_venda) {
+          const d = new Date(v.data_venda);
+          dataStr = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        return `
+          <tr class="hover:bg-orange-50/40 transition">
+            <td class="py-2.5 px-3 text-slate-600 font-mono text-[11px]">${dataStr}</td>
+            <td class="py-2.5 px-3 font-semibold text-slate-800">${v.descricao}</td>
+            <td class="py-2.5 px-2 text-center font-bold text-slate-700">${v.quantidade}</td>
+            <td class="py-2.5 px-3 text-right font-extrabold text-slate-800">${formataBRL(v.vl_total_venda)}</td>
+            <td class="py-2.5 px-3 text-right font-bold text-emerald-600">${formataBRL(v.lucro_total)}</td>
+            <td class="py-2.5 px-3 font-medium text-slate-700">${v.cliente || 'Consumidor'}</td>
+            <td class="py-2.5 px-3 text-slate-600"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-[10px]">${v.forma_pagamento || 'Pix'}</span></td>
+            <td class="py-2.5 px-2 text-center">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${v.status_pagamento === 'Recebido' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${v.status_pagamento || 'Recebido'}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 text-center">
+              <button onclick="estornarVenda(${v.id}, '${v.codigo}', ${v.quantidade})" title="Cancelar Venda e Devolver ao Estoque" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Estornar Venda
+    async function estornarVenda(vendaId, codigo, qtd) {
+      const result = await Swal.fire({
+        title: 'Estornar esta venda?',
+        text: `O registro da venda será cancelado e ${qtd} unidade(s) serão devolvidas ao estoque no Supabase.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Sim, estornar',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        // 1. Deletar Venda
+        const resDel = await supabase.table('vendas').delete().eq('id', vendaId);
+        if (resDel.error) throw resDel.error;
+
+        // 2. Restaurar Estoque
+        const p = produtosCache.find(x => x.codigo === codigo);
+        if (p) {
+          const novoEstoque = (p.quantidade_estoque || 0) + qtd;
+          const novaVendida = Math.max(0, (p.quantidade_vendida || 0) - qtd);
+          await supabase.table('produtos').update({
+            quantidade_estoque: novoEstoque,
+            quantidade_vendida: novaVendida
+          }).eq('id', p.id);
+        }
+
+        await carregarTudo();
+
+        Swal.fire('Estornado!', 'A venda foi cancelada e o estoque restaurado.', 'success');
+      } catch (err) {
+        Swal.fire('Erro', 'Não foi possível estornar: ' + err.message, 'error');
+      }
+    }
+
+    // Salvar Novo Produto no Supabase
+    async function salvarNovoProduto(e) {
+      e.preventDefault();
+      const codigo = document.getElementById('novoCodigo').value.trim();
+      const desc = document.getElementById('novoDescricao').value.trim();
+      const cat = document.getElementById('novoCategoria').value.trim() || 'DIVERSOS';
+      const qtd = parseInt(document.getElementById('novoQtd').value) || 1;
+      const custo = parseFloat(document.getElementById('novoCusto').value) || 0;
+      const revista = parseFloat(document.getElementById('novoPrecoRevista').value) || null;
+      const promo = parseFloat(document.getElementById('novoPrecoPromo').value) || null;
+      const pag = parseInt(document.getElementById('novoPagina').value) || null;
+
+      try {
+        const payload = {
+          codigo: codigo,
+          descricao: desc,
+          categoria: cat,
+          unidade: 'UN',
+          quantidade_comprada: qtd,
+          quantidade_estoque: qtd,
+          quantidade_vendida: 0,
+          vl_unit_sugerido: revista || custo * 1.5,
+          desconto_compra_unit: 0,
+          vl_unit_pago: custo,
+          desconto_repassado_unit: 0,
+          vl_unit_venda_sugerida_final: promo || revista || custo * 1.5,
+          preco_revista: revista,
+          preco_revista_promo: promo,
+          pagina_revista: pag,
+          origem: 'MANUAL'
+        };
+
+        const res = await supabase.table('produtos').insert(payload);
+        if (res.error) throw res.error;
+
+        await carregarTudo();
+        Swal.fire('Sucesso!', 'Novo produto cadastrado no Supabase.', 'success');
+        document.getElementById('formNovoProduto').reset();
+        mudarAba('produtos');
+      } catch (err) {
+        Swal.fire('Erro', 'Falha ao cadastrar produto: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

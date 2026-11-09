@@ -5,6 +5,24 @@ from supabase import create_client, Client
 CONFIG_SUPABASE_FILE = "config_supabase.json"
 
 def get_supabase_config():
+    # 1. Verifica Streamlit Secrets (Streamlit Cloud)
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets"):
+            url = st.secrets.get("SUPABASE_URL") or st.secrets.get("supabase_url")
+            key = st.secrets.get("SUPABASE_KEY") or st.secrets.get("supabase_key")
+            if url and key:
+                return {"supabase_url": str(url).strip(), "supabase_key": str(key).strip()}
+    except:
+        pass
+
+    # 2. Verifica Variaveis de Ambiente (Vercel / Render / Docker)
+    env_url = os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+    env_key = os.environ.get("SUPABASE_KEY") or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+    if env_url and env_key:
+        return {"supabase_url": env_url.strip(), "supabase_key": env_key.strip()}
+
+    # 3. Verifica arquivo local de configuracao
     if os.path.exists(CONFIG_SUPABASE_FILE):
         try:
             with open(CONFIG_SUPABASE_FILE, "r", encoding="utf-8") as f:
