@@ -757,7 +757,7 @@
 
         // Atualizar data de último login
         try {
-          await sbClient.table('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
+          await sbClient.from('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
         } catch (e) {}
 
         Swal.fire({
@@ -821,15 +821,15 @@
       if (syncIcon) syncIcon.classList.add('fa-spin');
 
       try {
-        const resProds = await sbClient.table('produtos').select('*').order('descricao');
+        const resProds = await sbClient.from('produtos').select('*').order('descricao');
         if (resProds.error) throw resProds.error;
         produtosCache = resProds.data || [];
 
-        const resClientes = await sbClient.table('clientes').select('*').order('nome');
+        const resClientes = await sbClient.from('clientes').select('*').order('nome');
         if (resClientes.error) throw resClientes.error;
         clientesCache = resClientes.data || [];
 
-        const resVendas = await sbClient.table('vendas').select('*').order('data_venda', { ascending: false });
+        const resVendas = await sbClient.from('vendas').select('*').order('data_venda', { ascending: false });
         if (resVendas.error) throw resVendas.error;
         vendasCache = resVendas.data || [];
 
@@ -1130,12 +1130,12 @@
           observacoes: obs
         };
 
-        const resVenda = await sbClient.table('vendas').insert(vendaPayload);
+        const resVenda = await sbClient.from('vendas').insert(vendaPayload);
         if (resVenda.error) throw resVenda.error;
 
         const novoEstoque = (p.quantidade_estoque || 0) - qtd;
         const novaQtdVendida = (p.quantidade_vendida || 0) + qtd;
-        const resProdUpdate = await sbClient.table('produtos').update({
+        const resProdUpdate = await sbClient.from('produtos').update({
           quantidade_estoque: novoEstoque,
           quantidade_vendida: novaQtdVendida
         }).eq('id', p.id);
@@ -1144,7 +1144,7 @@
         if (clienteNome) {
           const clienteExistente = clientesCache.find(c => c.nome.toLowerCase() === clienteNome.toLowerCase());
           if (!clienteExistente) {
-            await sbClient.table('clientes').insert({
+            await sbClient.from('clientes').insert({
               nome: clienteNome,
               telefone: clienteTel,
               email: clienteEmail,
@@ -1152,7 +1152,7 @@
               observacoes: `Primeira compra: ${p.descricao}`
             });
           } else if (clienteTel || clienteEmail || clienteNasc) {
-            await sbClient.table('clientes').update({
+            await sbClient.from('clientes').update({
               telefone: clienteTel || clienteExistente.telefone,
               email: clienteEmail || clienteExistente.email,
               data_nascimento: clienteNasc || clienteExistente.data_nascimento
@@ -1281,14 +1281,14 @@
       if (!result.isConfirmed) return;
 
       try {
-        const resDel = await sbClient.table('vendas').delete().eq('id', vendaId);
+        const resDel = await sbClient.from('vendas').delete().eq('id', vendaId);
         if (resDel.error) throw resDel.error;
 
         const p = produtosCache.find(x => x.codigo === codigo);
         if (p) {
           const novoEstoque = (p.quantidade_estoque || 0) + qtd;
           const novaVendida = Math.max(0, (p.quantidade_vendida || 0) - qtd);
-          await sbClient.table('produtos').update({
+          await sbClient.from('produtos').update({
             quantidade_estoque: novoEstoque,
             quantidade_vendida: novaVendida
           }).eq('id', p.id);
@@ -1333,7 +1333,7 @@
           origem: 'MANUAL'
         };
 
-        const res = await sbClient.table('produtos').insert(payload);
+        const res = await sbClient.from('produtos').insert(payload);
         if (res.error) throw res.error;
 
         await carregarTudo();
