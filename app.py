@@ -167,8 +167,8 @@ if not st.session_state["usuario_autenticado"]:
         """, unsafe_allow_html=True)
         
         with st.form("form_login_admin"):
-            email_login = st.text_input("E-mail de Administrador", placeholder="rodrigo.correa01@outlook.com ou daniele_barreto@hotmail.com")
-            senha_login = st.text_input("Senha de Acesso", type="password", placeholder="Digite sua senha")
+            email_login = st.text_input("E-mail de Administrador", placeholder="")
+            senha_login = st.text_input("Senha de Acesso", type="password", placeholder="")
             btn_entrar = st.form_submit_button("Entrar no Painel", use_container_width=True)
             
             if btn_entrar:

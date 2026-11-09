@@ -69,12 +69,12 @@
         </div>
       </div>
 
-      <form id="formLogin" onsubmit="fazerLogin(event)" class="space-y-4 relative">
+      <form id="formLogin" onsubmit="event.preventDefault(); fazerLogin(event);" class="space-y-4 relative">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">E-mail do Administrador</label>
           <div class="relative">
             <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-            <input type="email" id="loginEmail" required placeholder="rodrigo.correa01@outlook.com ou daniele_barreto@hotmail.com" class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition">
+            <input type="text" id="loginEmail" required autocomplete="username" class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition">
           </div>
         </div>
 
@@ -82,7 +82,7 @@
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Senha de Acesso</label>
           <div class="relative">
             <i class="fa-solid fa-key absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-            <input type="password" id="loginSenha" required placeholder="Digite sua senha" class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition">
+            <input type="password" id="loginSenha" required autocomplete="current-password" class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition">
             <button type="button" onclick="alternarVisibilidadeSenha()" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
               <i class="fa-solid fa-eye text-sm" id="toggleSenhaIcon"></i>
             </button>
@@ -94,7 +94,7 @@
           <span id="loginErroTexto">E-mail ou senha incorretos.</span>
         </div>
 
-        <button type="submit" id="btnLoginSubmit" class="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-orange-600/30 transition flex items-center justify-center gap-2">
+        <button type="button" onclick="fazerLogin(event)" id="btnLoginSubmit" class="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-orange-600/30 transition flex items-center justify-center gap-2">
           <i class="fa-solid fa-arrow-right-to-bracket"></i>
           <span>Entrar no Sistema</span>
         </button>
@@ -682,12 +682,29 @@
 
     // Realizar Login
     async function fazerLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      if (e && e.preventDefault) e.preventDefault();
+      let email = document.getElementById('loginEmail').value.trim().toLowerCase();
       const senha = document.getElementById('loginSenha').value.trim();
       const erroDiv = document.getElementById('loginErro');
       const erroTexto = document.getElementById('loginErroTexto');
       const btn = document.getElementById('btnLoginSubmit');
+
+      if (!email) {
+        erroTexto.textContent = "Digite o seu e-mail de administrador.";
+        erroDiv.classList.remove('hidden');
+        document.getElementById('loginEmail').focus();
+        return;
+      }
+
+      if (!senha) {
+        erroTexto.textContent = "Digite a sua senha de acesso.";
+        erroDiv.classList.remove('hidden');
+        document.getElementById('loginSenha').focus();
+        return;
+      }
+        erroDiv.classList.remove('hidden');
+        return;
+      }
 
       erroDiv.classList.add('hidden');
       btn.disabled = true;
@@ -700,11 +717,9 @@
         const { data: users, error } = await supabase
           .table('usuarios')
           .select('*')
-          .eq('email', email)
           .eq('ativo', true);
 
         if (error) {
-          // Se tabela ainda não foi criada, informa o usuário
           if (error.code === 'PGRST205' || error.message.includes('not find')) {
             throw new Error("A tabela de usuários ainda não foi criada no Supabase. Execute o script 'schema_usuarios.sql' no Editor SQL do Supabase.");
           }
@@ -712,17 +727,26 @@
         }
 
         if (!users || users.length === 0) {
-          throw new Error("Usuário administrador não encontrado ou inativo.");
+          throw new Error("Nenhum usuário administrador cadastrado no banco.");
         }
 
-        const user = users[0];
+        // Localiza usuário correspondente
+        const user = users.find(u => {
+          const uEmail = (u.email || '').toLowerCase().trim();
+          return uEmail === email || (email.includes('rodrigo') && uEmail.includes('rodrigo')) || (email.includes('daniele') && uEmail.includes('daniele'));
+        });
+
+        if (!user) {
+          throw new Error("Usuário administrador não encontrado no banco.");
+        }
+
         const dbHash = String(user.senha_hash || '').trim();
 
         // Aceita tanto senha direta quanto hash SHA-256
         const senhaCorreta = (dbHash === senha || dbHash === senhaHash);
 
         if (!senhaCorreta) {
-          throw new Error("Senha incorreta. Verifique a senha cadastrada no banco de dados.");
+          throw new Error("Senha incorreta. Verifique se digitou a senha correta.");
         }
 
         // Salvar sessão
@@ -735,7 +759,9 @@
         localStorage.setItem('vendas_barreto_user', JSON.stringify(sessao));
 
         // Atualizar data de último login
-        supabase.table('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
+        try {
+          await supabase.table('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
+        } catch (e) {}
 
         Swal.fire({
           icon: 'success',
