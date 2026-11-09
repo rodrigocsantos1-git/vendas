@@ -6,6 +6,8 @@ from datetime import date, datetime
 import io
 import re
 import db
+import importlib
+importlib.reload(db)
 import sheets_sync
 
 # Configuração da Página
