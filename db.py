@@ -1,6 +1,8 @@
 import sqlite3
 import os
+import json
 from parse_nf import parse_items
+import supabase_client
 
 DB_PATH = "vendas_natura.db"
 
@@ -42,6 +44,7 @@ def categorize_product(desc):
     return "Outros"
 
 def init_db(force_reseed=False):
+    """Inicializa banco local como fallback e verifica tabelas."""
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -70,18 +73,6 @@ def init_db(force_reseed=False):
     )
     """)
     
-    # Check if new columns exist if table was already created
-    cursor.execute("PRAGMA table_info(produtos)")
-    cols = [r['name'] for r in cursor.fetchall()]
-    if 'preco_revista' not in cols:
-        cursor.execute("ALTER TABLE produtos ADD COLUMN preco_revista REAL DEFAULT 0.0")
-    if 'preco_revista_promo' not in cols:
-        cursor.execute("ALTER TABLE produtos ADD COLUMN preco_revista_promo REAL")
-    if 'pagina_revista' not in cols:
-        cursor.execute("ALTER TABLE produtos ADD COLUMN pagina_revista INTEGER")
-    if 'nome_revista' not in cols:
-        cursor.execute("ALTER TABLE produtos ADD COLUMN nome_revista TEXT")
-
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS clientes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -97,7 +88,7 @@ def init_db(force_reseed=False):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS vendas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        produto_id INTEGER NOT NULL,
+        produto_id INTEGER,
         codigo TEXT NOT NULL,
         descricao TEXT NOT NULL,
         quantidade INTEGER NOT NULL,
@@ -119,102 +110,25 @@ def init_db(force_reseed=False):
         FOREIGN KEY(cliente_id) REFERENCES clientes(id)
     )
     """)
-    
-    # Check if migration columns exist in vendas
-    cursor.execute("PRAGMA table_info(vendas)")
-    v_cols = [r['name'] for r in cursor.fetchall()]
-    if 'cliente_id' not in v_cols:
-        cursor.execute("ALTER TABLE vendas ADD COLUMN cliente_id INTEGER")
-    if 'cliente_telefone' not in v_cols:
-        cursor.execute("ALTER TABLE vendas ADD COLUMN cliente_telefone TEXT")
-    if 'cliente_email' not in v_cols:
-        cursor.execute("ALTER TABLE vendas ADD COLUMN cliente_email TEXT")
-    if 'cliente_nascimento' not in v_cols:
-        cursor.execute("ALTER TABLE vendas ADD COLUMN cliente_nascimento TEXT")
-    
     conn.commit()
-    
-    # Import catalog mapping
-    from build_catalog_mapping import catalog_data
-
-    # Check if empty or forced reseed
-    cursor.execute("SELECT COUNT(*) as cnt FROM produtos")
-    count = cursor.fetchone()['cnt']
-    
-    if count == 0 or force_reseed:
-        if force_reseed:
-            cursor.execute("DELETE FROM vendas")
-            cursor.execute("DELETE FROM produtos")
-            conn.commit()
-            
-        items = parse_items()
-        for it in items:
-            cat = categorize_product(it['descricao'])
-            qtd = it['quantidade']
-            vl_sug = it['vl_unit_sugerido']
-            desc_compra = abs(it['desconto_unit'])
-            vl_pago = it['vl_unit_pago']
-            
-            # Catalog info lookup
-            c_info = catalog_data.get(it['codigo'], {})
-            preco_rev = c_info.get('preco_revista_tabela', vl_sug)
-            preco_promo = c_info.get('preco_revista_promo', None)
-            pag_rev = c_info.get('pagina_revista', None)
-            nome_rev = c_info.get('nome_revista', it['descricao'])
-
-            # Default final selling price suggestion is the catalog price, 
-            # with 0 discount passed to customer initially (editable)
-            vl_venda_padrao = preco_rev
-            
-            cursor.execute("""
-            INSERT INTO produtos (
-                codigo, descricao, categoria, unidade,
-                quantidade_comprada, quantidade_estoque, quantidade_vendida,
-                vl_unit_sugerido, desconto_compra_unit, vl_unit_pago,
-                desconto_repassado_unit, vl_unit_venda_sugerida_final,
-                preco_revista, preco_revista_promo, pagina_revista, nome_revista,
-                origem, observacoes
-            ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 0.0, ?, ?, ?, ?, ?, 'Nota Fiscal 05/11/2026', '')
-            """, (
-                it['codigo'],
-                it['descricao'],
-                cat,
-                it['unidade'],
-                qtd,
-                qtd,
-                vl_sug,
-                desc_compra,
-                vl_pago,
-                vl_venda_padrao,
-                preco_rev,
-                preco_promo,
-                pag_rev,
-                nome_rev
-            ))
-        conn.commit()
-        print(f"Banco inicializado com {len(items)} produtos da Nota Fiscal e dados do Catálogo.")
-    else:
-        # Update existing records with catalog info if they don't have it
-        for cod, c_info in catalog_data.items():
-            cursor.execute("""
-            UPDATE produtos SET
-                preco_revista = ?,
-                preco_revista_promo = ?,
-                pagina_revista = ?,
-                nome_revista = ?
-            WHERE codigo = ?
-            """, (
-                c_info.get('preco_revista_tabela'),
-                c_info.get('preco_revista_promo'),
-                c_info.get('pagina_revista'),
-                c_info.get('nome_revista'),
-                cod
-            ))
-        conn.commit()
-    
     conn.close()
 
 def get_produtos():
+    """Busca produtos diretamente do Supabase (com fallback local se offline)."""
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            res = sb.table("produtos").select("*").order("id").execute()
+            if res.data:
+                # Converter tipos numéricos para float
+                for r in res.data:
+                    for k in ['vl_unit_sugerido', 'desconto_compra_unit', 'vl_unit_pago', 'desconto_repassado_unit', 'vl_unit_venda_sugerida_final', 'preco_revista', 'preco_revista_promo']:
+                        if r.get(k) is not None:
+                            r[k] = float(r[k])
+                return res.data
+        except Exception as e:
+            print("Aviso: Falha ao consultar Supabase, usando local:", e)
+            
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM produtos ORDER BY id ASC")
@@ -223,6 +137,20 @@ def get_produtos():
     return [dict(r) for r in rows]
 
 def get_vendas():
+    """Busca vendas diretamente do Supabase."""
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            res = sb.table("vendas").select("*").order("id", desc=True).execute()
+            if res.data is not None:
+                for r in res.data:
+                    for k in ['vl_unit_pago', 'vl_unit_venda', 'desconto_repassado_unit', 'vl_total_venda', 'lucro_total']:
+                        if r.get(k) is not None:
+                            r[k] = float(r[k])
+                return res.data
+        except Exception as e:
+            print("Aviso: Falha ao consultar vendas no Supabase:", e)
+            
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM vendas ORDER BY id DESC")
@@ -230,52 +158,27 @@ def get_vendas():
     conn.close()
     return [dict(r) for r in rows]
 
-def add_produto(codigo, descricao, categoria, unidade, qtd, vl_sugerido, vl_pago, desconto_compra=0.0, desconto_repassado=0.0, vl_venda=None, observacoes=""):
-    if vl_venda is None:
-        vl_venda = vl_sugerido - desconto_repassado
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-    INSERT INTO produtos (
-        codigo, descricao, categoria, unidade,
-        quantidade_comprada, quantidade_estoque, quantidade_vendida,
-        vl_unit_sugerido, desconto_compra_unit, vl_unit_pago,
-        desconto_repassado_unit, vl_unit_venda_sugerida_final,
-        origem, observacoes
-    ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, 'Cadastro Manual', ?)
-    """, (
-        codigo, descricao, categoria, unidade,
-        qtd, qtd, vl_sugerido, desconto_compra, vl_pago,
-        desconto_repassado, vl_venda, observacoes
-    ))
-    conn.commit()
-    new_id = cursor.lastrowid
-    conn.close()
-    return new_id
-
-def update_produto(prod_id, updates):
-    conn = get_connection()
-    cursor = conn.cursor()
-    fields = []
-    values = []
-    for k, v in updates.items():
-        fields.append(f"{k} = ?")
-        values.append(v)
-    values.append(prod_id)
-    query = f"UPDATE produtos SET {', '.join(fields)} WHERE id = ?"
-    cursor.execute(query, values)
-    conn.commit()
-    conn.close()
-
-def delete_produto(prod_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM vendas WHERE produto_id = ?", (prod_id,))
-    cursor.execute("DELETE FROM produtos WHERE id = ?", (prod_id,))
-    conn.commit()
-    conn.close()
-
 def get_clientes():
+    """Busca clientes do Supabase com cálculos de compras e total gasto."""
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            res_c = sb.table("clientes").select("*").order("nome").execute()
+            res_v = sb.table("vendas").select("id, cliente_id, cliente, vl_total_venda, data_venda").execute()
+            
+            clientes = res_c.data or []
+            vendas = res_v.data or []
+            
+            for c in clientes:
+                c_vendas = [v for v in vendas if v.get('cliente_id') == c['id'] or (v.get('cliente') and v['cliente'].strip().lower() == c['nome'].strip().lower())]
+                c['total_compras'] = len(c_vendas)
+                c['valor_total_gasto'] = float(sum(float(v.get('vl_total_venda') or 0.0) for v in c_vendas))
+                datas = [v['data_venda'] for v in c_vendas if v.get('data_venda')]
+                c['ultima_compra'] = max(datas) if datas else None
+            return clientes
+        except Exception as e:
+            print("Aviso: Falha ao consultar clientes no Supabase:", e)
+            
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -293,6 +196,26 @@ def get_clientes():
     return [dict(r) for r in rows]
 
 def add_cliente(nome, telefone="", email="", data_nascimento="", observacoes=""):
+    """Adiciona cliente no Supabase e no banco local."""
+    c_id = None
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            nasc_val = data_nascimento if data_nascimento and str(data_nascimento).strip() else None
+            c_data = {
+                "nome": nome.strip(),
+                "telefone": telefone.strip(),
+                "email": email.strip(),
+                "data_nascimento": nasc_val,
+                "observacoes": observacoes.strip()
+            }
+            res = sb.table("clientes").insert(c_data).execute()
+            if res.data:
+                c_id = res.data[0]['id']
+        except Exception as e:
+            print("Erro ao adicionar cliente no Supabase:", e)
+            
+    # Salvar também no local
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -300,91 +223,196 @@ def add_cliente(nome, telefone="", email="", data_nascimento="", observacoes="")
     VALUES (?, ?, ?, ?, ?)
     """, (nome, telefone, email, data_nascimento, observacoes))
     conn.commit()
-    new_id = cursor.lastrowid
+    local_id = cursor.lastrowid
     conn.close()
-
-    try:
-        import sheets_sync
-        sheets_sync.enviar_cliente_para_google_sheets({
-            'id': new_id,
-            'nome': nome,
-            'telefone': telefone,
-            'email': email,
-            'data_nascimento': data_nascimento,
-            'observacoes': observacoes
-        })
-    except:
-        pass
-
-    return new_id
+    return c_id or local_id
 
 def update_cliente(cliente_id, updates):
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            sb.table("clientes").update(updates).eq("id", cliente_id).execute()
+        except Exception as e:
+            print("Erro ao atualizar cliente no Supabase:", e)
+            
     conn = get_connection()
     cursor = conn.cursor()
-    fields = []
-    values = []
-    for k, v in updates.items():
-        fields.append(f"{k} = ?")
-        values.append(v)
-    values.append(cliente_id)
-    query = f"UPDATE clientes SET {', '.join(fields)} WHERE id = ?"
-    cursor.execute(query, values)
+    fields = [f"{k} = ?" for k in updates.keys()]
+    values = list(updates.values()) + [cliente_id]
+    cursor.execute(f"UPDATE clientes SET {', '.join(fields)} WHERE id = ?", values)
     conn.commit()
     conn.close()
 
 def delete_cliente(cliente_id):
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            sb.table("clientes").delete().eq("id", cliente_id).execute()
+        except Exception as e:
+            print("Erro ao excluir cliente no Supabase:", e)
+            
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE vendas SET cliente_id = NULL WHERE cliente_id = ?", (cliente_id,))
     cursor.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
     conn.commit()
     conn.close()
 
-def registrar_venda(produto_id, qtd_venda, vl_unit_venda, desconto_repassado_unit, cliente, forma_pagamento, status_pagamento, data_venda, observacoes="", cliente_id=None, cliente_telefone="", cliente_email="", cliente_nascimento=""):
+def add_produto(codigo, descricao, categoria, unidade, qtd, vl_sugerido, vl_pago, desconto_compra=0.0, desconto_repassado=0.0, vl_venda=None, observacoes=""):
+    if vl_venda is None:
+        vl_venda = vl_sugerido - desconto_repassado
+        
+    p_id = None
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            p_data = {
+                "codigo": codigo,
+                "descricao": descricao,
+                "categoria": categoria,
+                "unidade": unidade,
+                "quantidade_comprada": qtd,
+                "quantidade_estoque": qtd,
+                "quantidade_vendida": 0,
+                "vl_unit_sugerido": vl_sugerido,
+                "desconto_compra_unit": desconto_compra,
+                "vl_unit_pago": vl_pago,
+                "desconto_repassado_unit": desconto_repassado,
+                "vl_unit_venda_sugerida_final": vl_venda,
+                "preco_revista": vl_sugerido,
+                "origem": "Cadastro Manual",
+                "observacoes": observacoes
+            }
+            res = sb.table("produtos").insert(p_data).execute()
+            if res.data:
+                p_id = res.data[0]['id']
+        except Exception as e:
+            print("Erro ao adicionar produto no Supabase:", e)
+
     conn = get_connection()
     cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO produtos (
+        codigo, descricao, categoria, unidade,
+        quantidade_comprada, quantidade_estoque, quantidade_vendida,
+        vl_unit_sugerido, desconto_compra_unit, vl_unit_pago,
+        desconto_repassado_unit, vl_unit_venda_sugerida_final,
+        preco_revista, origem, observacoes
+    ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 'Cadastro Manual', ?)
+    """, (
+        codigo, descricao, categoria, unidade,
+        qtd, qtd, vl_sugerido, desconto_compra, vl_pago,
+        desconto_repassado, vl_venda, vl_sugerido, observacoes
+    ))
+    conn.commit()
+    local_id = cursor.lastrowid
+    conn.close()
+    return p_id or local_id
+
+def update_produto(prod_id, updates):
+    """Atualiza dados do produto no Supabase e no local."""
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            sb.table("produtos").update(updates).eq("id", prod_id).execute()
+        except Exception as e:
+            print("Erro ao atualizar produto no Supabase:", e)
+            
+    conn = get_connection()
+    cursor = conn.cursor()
+    fields = [f"{k} = ?" for k in updates.keys()]
+    values = list(updates.values()) + [prod_id]
+    cursor.execute(f"UPDATE produtos SET {', '.join(fields)} WHERE id = ?", values)
+    conn.commit()
+    conn.close()
+
+def delete_produto(prod_id):
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            sb.table("produtos").delete().eq("id", prod_id).execute()
+        except Exception as e:
+            print("Erro ao excluir produto no Supabase:", e)
+            
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM produtos WHERE id = ?", (prod_id,))
+    conn.commit()
+    conn.close()
+
+def registrar_venda(produto_id, qtd_venda, vl_unit_venda, desconto_repassado_unit, cliente, forma_pagamento, status_pagamento, data_venda, observacoes="", cliente_id=None, cliente_telefone="", cliente_email="", cliente_nascimento=""):
+    """Registra venda diretamente no Supabase em tempo real com baixa de estoque e dados do cliente."""
     
-    # If customer name is provided but no cliente_id, check if customer already exists or create
-    if not cliente_id and cliente and cliente.strip() and cliente.strip().lower() != "consumidor":
-        cursor.execute("SELECT id FROM clientes WHERE LOWER(TRIM(nome)) = LOWER(TRIM(?))", (cliente.strip(),))
-        row = cursor.fetchone()
-        if row:
-            cliente_id = row['id']
-            # Optionally update phone/email if missing
-            if cliente_telefone or cliente_email or cliente_nascimento:
-                cursor.execute("""
-                UPDATE clientes SET
-                    telefone = CASE WHEN telefone IS NULL OR telefone = '' THEN ? ELSE telefone END,
-                    email = CASE WHEN email IS NULL OR email = '' THEN ? ELSE email END,
-                    data_nascimento = CASE WHEN data_nascimento IS NULL OR data_nascimento = '' THEN ? ELSE data_nascimento END
-                WHERE id = ?
-                """, (cliente_telefone, cliente_email, cliente_nascimento, cliente_id))
-        else:
-            # Create new client
-            cursor.execute("""
-            INSERT INTO clientes (nome, telefone, email, data_nascimento, observacoes)
-            VALUES (?, ?, ?, ?, 'Cadastrado automaticamente na venda')
-            """, (cliente.strip(), cliente_telefone, cliente_email, cliente_nascimento))
-            cliente_id = cursor.lastrowid
-    
-    # Obter dados do produto
-    cursor.execute("SELECT * FROM produtos WHERE id = ?", (produto_id,))
-    prod = cursor.fetchone()
+    # 1. Obter produto
+    prods = get_produtos()
+    prod = next((p for p in prods if str(p['id']) == str(produto_id)), None)
     if not prod:
-        conn.close()
         raise ValueError("Produto não encontrado.")
     
-    prod = dict(prod)
     if qtd_venda > prod['quantidade_estoque']:
-        conn.close()
         raise ValueError(f"Quantidade insuficiente em estoque. Disponível: {prod['quantidade_estoque']}")
     
-    vl_unit_pago = prod['vl_unit_pago']
+    vl_unit_pago = float(prod['vl_unit_pago'])
     vl_total_venda = round(qtd_venda * vl_unit_venda, 2)
     custo_total = round(qtd_venda * vl_unit_pago, 2)
     lucro_total = round(vl_total_venda - custo_total, 2)
     
-    # Inserir venda
+    # 2. Se cliente não tem ID e nome foi informado, verificar ou cadastrar
+    if not cliente_id and cliente and cliente.strip() and cliente.strip().lower() != "consumidor":
+        clientes = get_clientes()
+        existente = next((c for c in clientes if c['nome'].strip().lower() == cliente.strip().lower()), None)
+        if existente:
+            cliente_id = existente['id']
+        else:
+            cliente_id = add_cliente(
+                nome=cliente.strip(),
+                telefone=cliente_telefone,
+                email=cliente_email,
+                data_nascimento=cliente_nascimento,
+                observacoes="Cadastrado na venda"
+            )
+
+    # 3. Inserir no Supabase
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            nasc_val = cliente_nascimento if cliente_nascimento and str(cliente_nascimento).strip() else None
+            venda_data = {
+                "produto_id": produto_id,
+                "codigo": prod['codigo'],
+                "descricao": prod['descricao'],
+                "quantidade": qtd_venda,
+                "vl_unit_pago": vl_unit_pago,
+                "vl_unit_venda": vl_unit_venda,
+                "desconto_repassado_unit": desconto_repassado_unit,
+                "vl_total_venda": vl_total_venda,
+                "lucro_total": lucro_total,
+                "cliente_id": cliente_id,
+                "cliente": cliente,
+                "cliente_telefone": cliente_telefone or "",
+                "cliente_email": cliente_email or "",
+                "cliente_nascimento": nasc_val,
+                "forma_pagamento": forma_pagamento,
+                "status_pagamento": status_pagamento,
+                "data_venda": data_venda,
+                "observacoes": observacoes or ""
+            }
+            sb.table("vendas").insert(venda_data).execute()
+            
+            # Baixar estoque no Supabase
+            novo_est = prod['quantidade_estoque'] - qtd_venda
+            novo_vend = prod['quantidade_vendida'] + qtd_venda
+            sb.table("produtos").update({
+                "quantidade_estoque": novo_est,
+                "quantidade_vendida": novo_vend
+            }).eq("id", produto_id).execute()
+            
+        except Exception as e:
+            print("Erro ao registrar venda no Supabase:", e)
+            raise e
+
+    # 4. Salvar também no local
+    conn = get_connection()
+    cursor = conn.cursor()
     cursor.execute("""
     INSERT INTO vendas (
         produto_id, codigo, descricao, quantidade,
@@ -400,73 +428,49 @@ def registrar_venda(produto_id, qtd_venda, vl_unit_venda, desconto_repassado_uni
         cliente_telefone, cliente_email, cliente_nascimento,
         forma_pagamento, status_pagamento, data_venda, observacoes
     ))
-    
-    # Atualizar estoque
-    novo_estoque = prod['quantidade_estoque'] - qtd_venda
-    nova_qtd_vendida = prod['quantidade_vendida'] + qtd_venda
     cursor.execute("""
     UPDATE produtos SET
-        quantidade_estoque = ?,
-        quantidade_vendida = ?
+        quantidade_estoque = quantidade_estoque - ?,
+        quantidade_vendida = quantidade_vendida + ?
     WHERE id = ?
-    """, (novo_estoque, nova_qtd_vendida, produto_id))
-    
+    """, (qtd_venda, qtd_venda, produto_id))
     conn.commit()
-    new_venda_id = cursor.lastrowid
     conn.close()
-
-    # Tentar enviar diretamente ao Google Sheets via Webhook (se configurado)
-    try:
-        import sheets_sync
-        sheets_sync.enviar_venda_para_google_sheets({
-            'id': new_venda_id,
-            'codigo': prod['codigo'],
-            'descricao': prod['descricao'],
-            'quantidade': qtd_venda,
-            'vl_unit_pago': vl_unit_pago,
-            'vl_unit_venda': vl_unit_venda,
-            'desconto_repassado_unit': desconto_repassado_unit,
-            'vl_total_venda': vl_total_venda,
-            'lucro_total': lucro_total,
-            'cliente': cliente,
-            'cliente_telefone': cliente_telefone,
-            'cliente_email': cliente_email,
-            'cliente_nascimento': cliente_nascimento,
-            'forma_pagamento': forma_pagamento,
-            'status_pagamento': status_pagamento,
-            'data_venda': data_venda,
-            'observacoes': observacoes
-        })
-    except Exception as e:
-        print("Aviso: webhook Google Sheets não disparado:", e)
-
+    
     return True
 
 def cancelar_venda(venda_id):
+    """Estorna venda no Supabase e no banco local."""
+    vendas = get_vendas()
+    venda = next((v for v in vendas if str(v['id']) == str(venda_id)), None)
+    if not venda:
+        raise ValueError("Venda não encontrada.")
+        
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            if venda.get('produto_id'):
+                # Devolver estoque
+                prods = get_produtos()
+                prod = next((p for p in prods if p['id'] == venda['produto_id']), None)
+                if prod:
+                    sb.table("produtos").update({
+                        "quantidade_estoque": prod['quantidade_estoque'] + venda['quantidade'],
+                        "quantidade_vendida": max(0, prod['quantidade_vendida'] - venda['quantidade'])
+                    }).eq("id", venda['produto_id']).execute()
+            sb.table("vendas").delete().eq("id", venda_id).execute()
+        except Exception as e:
+            print("Erro ao cancelar venda no Supabase:", e)
+
     conn = get_connection()
     cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM vendas WHERE id = ?", (venda_id,))
-    venda = cursor.fetchone()
-    if not venda:
-        conn.close()
-        raise ValueError("Venda não encontrada.")
-    venda = dict(venda)
-    
-    # Devolver ao estoque
     cursor.execute("""
     UPDATE produtos SET
         quantidade_estoque = quantidade_estoque + ?,
         quantidade_vendida = quantidade_vendida - ?
     WHERE id = ?
     """, (venda['quantidade'], venda['quantidade'], venda['produto_id']))
-    
     cursor.execute("DELETE FROM vendas WHERE id = ?", (venda_id,))
     conn.commit()
     conn.close()
     return True
-
-if __name__ == "__main__":
-    init_db(force_reseed=True)
-    prods = get_produtos()
-    print(f"Total produtos no banco: {len(prods)}")
