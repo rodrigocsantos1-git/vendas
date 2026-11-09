@@ -3,7 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vendas Barreto Corrêa - Gestão Natura</title>
+  <title>Vendas Barreto Corrêa</title>
+  <!-- Metatags para redes sociais e WhatsApp -->
+  <meta name="title" content="Vendas Barreto Corrêa">
+  <meta name="description" content="Plataforma de Gestão Vendas Barreto Corrêa">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vendas-barreto-correa.vercel.app/">
+  <meta property="og:title" content="Vendas Barreto Corrêa">
+  <meta property="og:description" content="Plataforma de Gestão Vendas Barreto Corrêa">
+  <meta property="twitter:card" content="summary">
+  <meta property="twitter:title" content="Vendas Barreto Corrêa">
+  <meta property="twitter:description" content="Plataforma de Gestão Vendas Barreto Corrêa">
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -111,7 +121,7 @@
                 Vendas <span class="text-orange-600">Barreto Corrêa</span>
               </h1>
               <p class="text-[11px] font-medium text-slate-600 flex items-center gap-1.5">
-                <span>Gestão Natura</span>
+                <span>Painel Administrativo</span>
                 <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 <span class="text-emerald-600 font-semibold">Supabase Nuvem</span>
               </p>
@@ -542,7 +552,7 @@
           <form id="formNovoProduto" onsubmit="salvarNovoProduto(event)" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Código Natura *</label>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Código do Produto *</label>
                 <input type="text" id="novoCodigo" required placeholder="Ex: 111197" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
               </div>
               <div class="sm:col-span-2">
@@ -872,7 +882,7 @@
           const partes = c.data_nascimento.split('-');
           const dia = partes[2];
           const telFormatado = c.telefone ? c.telefone.replace(/\D/g, '') : '';
-          const msgWhats = encodeURIComponent(`Olá ${c.nome}! Desejo um feliz aniversário repleto de bênçãos! Temos condições especiais da Natura para comemorar seu dia.`);
+          const msgWhats = encodeURIComponent(`Olá ${c.nome}! Desejo um feliz aniversário repleto de bênçãos! Temos condições especiais para você comemorar seu dia.`);
           const linkWhats = telFormatado ? `https://wa.me/55${telFormatado}?text=${msgWhats}` : '#';
 
           return `
@@ -1158,7 +1168,7 @@
 
       tbody.innerHTML = clientes.map(c => {
         const telFormatado = c.telefone ? c.telefone.replace(/\D/g, '') : '';
-        const msgWhats = encodeURIComponent(`Olá ${c.nome}! Tudo bem? Passando para te desejar uma excelente semana e apresentar as novidades da Natura.`);
+        const msgWhats = encodeURIComponent(`Olá ${c.nome}! Tudo bem? Passando para te desejar uma excelente semana e apresentar nossas novidades e promoções especiais.`);
         const linkWhats = telFormatado ? `https://wa.me/55${telFormatado}?text=${msgWhats}` : null;
 
         let nascimentoStr = '-';

@@ -12,7 +12,7 @@ import sheets_sync
 
 # Configuração da Página
 st.set_page_config(
-    page_title="Controle de Vendas Natura",
+    page_title="Vendas Barreto Corrêa",
     page_icon="🛍️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -199,8 +199,8 @@ with st.sidebar:
         st.rerun()
     st.divider()
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Natura_Cosmeticos_logo.svg/320px-Natura_Cosmeticos_logo.svg.png", width=160)
-    st.markdown("### 🛍️ Vendas Natura")
-    st.caption("Painel de Gestão Integrado")
+    st.markdown("### 🛍️ Vendas Barreto Corrêa")
+    st.caption("Painel Administrativo")
     st.divider()
     
     df_p, df_v, df_c = load_data()
