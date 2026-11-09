@@ -7,16 +7,15 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Vendas Barreto Corrêa</title>
-  <!-- Metatags para redes sociais e WhatsApp -->
+  
+  <!-- Metatags para compartilhamento -->
   <meta name="title" content="Vendas Barreto Corrêa">
   <meta name="description" content="Plataforma de Gestão Vendas Barreto Corrêa">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://vendas-barreto-correa.vercel.app/">
   <meta property="og:title" content="Vendas Barreto Corrêa">
   <meta property="og:description" content="Plataforma de Gestão Vendas Barreto Corrêa">
-  <meta property="twitter:card" content="summary">
-  <meta property="twitter:title" content="Vendas Barreto Corrêa">
-  <meta property="twitter:description" content="Plataforma de Gestão Vendas Barreto Corrêa">
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -37,18 +36,36 @@
       }
     }
   </script>
+  
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Chart.js para os Gráficos Visuais -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .glass-card {
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
     }
   </style>
 </head>
@@ -57,7 +74,6 @@
   <!-- ================= TELA DE LOGIN (ACESSO RESTRITO) ================= -->
   <div id="telaLogin" class="fixed inset-0 z-50 bg-gradient-to-br from-orange-950/80 via-slate-900/90 to-amber-950/80 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-orange-100 relative overflow-hidden">
-      <!-- Glow background -->
       <div class="absolute -top-12 -right-12 w-36 h-36 bg-orange-500/20 rounded-full blur-2xl"></div>
       <div class="absolute -bottom-12 -left-12 w-36 h-36 bg-amber-500/20 rounded-full blur-2xl"></div>
 
@@ -97,7 +113,7 @@
           <span id="loginErroTexto">E-mail ou senha incorretos.</span>
         </div>
 
-        <button type="button" onclick="fazerLogin(event)" id="btnLoginSubmit" class="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-orange-600/30 transition flex items-center justify-center gap-2">
+        <button type="submit" id="btnLoginSubmit" class="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-orange-600/30 transition flex items-center justify-center gap-2">
           <i class="fa-solid fa-arrow-right-to-bracket"></i>
           <span>Entrar no Sistema</span>
         </button>
@@ -154,7 +170,7 @@
 
     <!-- Navigation Tabs -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-      <div class="flex overflow-x-auto gap-2 p-1.5 bg-white/80 rounded-2xl border border-orange-100 shadow-sm scrollbar-none">
+      <div class="flex overflow-x-auto gap-2 p-1.5 bg-white/80 rounded-2xl border border-orange-100 shadow-sm custom-scrollbar">
         <button onclick="mudarAba('dashboard')" id="tabBtn-dashboard" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition bg-orange-600 text-white shadow-sm">
           <i class="fa-solid fa-chart-pie"></i>
           <span>Visão Geral</span>
@@ -187,7 +203,7 @@
     <!-- Content Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
 
-      <!-- TAB: DASHBOARD -->
+      <!-- ================= TAB: DASHBOARD (VISÃO GERAL COM GRÁFICOS) ================= -->
       <div id="tab-dashboard" class="tab-content space-y-6">
         <!-- KPI Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -236,6 +252,37 @@
           </div>
         </div>
 
+        <!-- SEÇÃO DE GRÁFICOS (IDÊNTICA AO STREAMLIT / PYTHON) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Gráfico 1: Comparativo Financeiro Global -->
+          <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-chart-column text-orange-600 text-lg"></i>
+                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Comparativo Financeiro Global</h3>
+              </div>
+              <span class="text-[11px] text-slate-400 font-semibold">Visão de Rentabilidade</span>
+            </div>
+            <div class="h-64 sm:h-72 relative">
+              <canvas id="chartComparativoFinanceiro"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 2: Distribuição por Categoria -->
+          <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-amber-500 text-lg"></i>
+                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Distribuição do Investimento por Categoria</h3>
+              </div>
+              <span class="text-[11px] text-slate-400 font-semibold">% de Custo</span>
+            </div>
+            <div class="h-64 sm:h-72 relative flex items-center justify-center">
+              <canvas id="chartCategorias"></canvas>
+            </div>
+          </div>
+        </div>
+
         <!-- Birthday & Quick Attention Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Aniversariantes do Mês -->
@@ -247,7 +294,7 @@
               </div>
               <span id="mesAtualBadge" class="text-xs font-bold px-2 py-0.5 bg-pink-50 text-pink-600 rounded-full"></span>
             </div>
-            <div id="listaAniversariantes" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+            <div id="listaAniversariantes" class="space-y-2.5 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
               <p class="text-xs text-slate-600 text-center py-4">Nenhum aniversariante cadastrado para este mês.</p>
             </div>
           </div>
@@ -261,7 +308,7 @@
               </div>
               <span class="text-xs font-bold px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full">Últimas unidades</span>
             </div>
-            <div id="listaBaixoEstoque" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+            <div id="listaBaixoEstoque" class="space-y-2.5 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
               <p class="text-xs text-slate-600 text-center py-4">Carregando estoque...</p>
             </div>
           </div>
@@ -274,7 +321,7 @@
                 <h3 class="font-bold text-lg">Vendas Barreto Corrêa</h3>
               </div>
               <p class="text-orange-100 text-xs leading-relaxed">
-                Sistema administrativo com acesso total para Rodrigo Corrêa e Daniele Barreto. Dados protegidos na nuvem Supabase em tempo real.
+                Sistema sincronizado em tempo real na nuvem Supabase. Seus dados de estoque, clientes e vendas estão protegidos e disponíveis em qualquer dispositivo.
               </p>
             </div>
             <div class="mt-4 pt-4 border-t border-white/20 flex flex-col gap-2">
@@ -282,14 +329,14 @@
                 <i class="fa-solid fa-cash-register mr-1"></i> Registrar Nova Venda
               </button>
               <button onclick="mudarAba('produtos')" class="w-full bg-white/20 hover:bg-white/30 text-white font-semibold text-xs py-2 rounded-xl transition text-center">
-                <i class="fa-solid fa-search mr-1"></i> Consultar Preços na Revista
+                <i class="fa-solid fa-search mr-1"></i> Consultar Catálogo & Preços
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- TAB: PRODUTOS & ESTOQUE -->
+      <!-- ================= TAB: ESTOQUE & PRODUTOS ================= -->
       <div id="tab-produtos" class="tab-content hidden space-y-4">
         <div class="bg-white rounded-2xl border border-orange-100 p-4 sm:p-5 shadow-sm">
           <!-- Filter bar -->
@@ -337,7 +384,7 @@
         </div>
       </div>
 
-      <!-- TAB: REGISTRAR VENDA -->
+      <!-- ================= TAB: REGISTRAR VENDA (COM BUSCA EM TEMPO REAL) ================= -->
       <div id="tab-venda" class="tab-content hidden">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Formulário -->
@@ -348,23 +395,58 @@
             </h2>
 
             <form id="formVenda" onsubmit="salvarVenda(event)" class="space-y-4">
-              <!-- Produto Selector -->
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Selecione o Produto *</label>
-                <select id="vendaProdutoId" onchange="atualizarDadosProdutoSelecionado()" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                  <option value="">-- Selecione o item --</option>
-                </select>
+              <!-- BUSCADOR INTELIGENTE DE PRODUTO -->
+              <div class="relative">
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Buscar Produto (Escreva o nome ou código) *
+                </label>
+                <div class="relative">
+                  <i class="fa-solid fa-search absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                  <input 
+                    type="text" 
+                    id="buscaProdutoInput" 
+                    oninput="buscarProdutosVenda(this.value)" 
+                    onfocus="buscarProdutosVenda(this.value)"
+                    placeholder="Digite para buscar... (ex: Sabonete, Kaiak, 111197)" 
+                    autocomplete="off"
+                    class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition"
+                  >
+                  <button type="button" onclick="limparBuscaProduto()" id="btnLimparBuscaProd" class="hidden absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                  </button>
+                </div>
+
+                <!-- Dropdown Flutuante de Resultados da Busca -->
+                <div id="dropdownResultadosProduto" class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-orange-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar divide-y divide-slate-100">
+                </div>
+
+                <!-- Campo hidden com ID do produto selecionado -->
+                <input type="hidden" id="vendaProdutoId" required>
               </div>
 
-              <!-- Produto preview info box -->
-              <div id="vendaInfoBox" class="hidden p-3.5 bg-orange-50/70 border border-orange-100 rounded-xl text-xs space-y-1 text-slate-700">
-                <div class="flex justify-between">
-                  <span>Custo Unitário Pago: <b id="previewCusto" class="text-slate-800">R$ 0,00</b></span>
-                  <span>Preço na Revista: <b id="previewRevista" class="text-orange-700">R$ 0,00</b></span>
+              <!-- Produto selecionado info box -->
+              <div id="vendaInfoBox" class="hidden p-4 bg-orange-50/80 border border-orange-200 rounded-2xl text-xs space-y-2 text-slate-700">
+                <div class="flex justify-between items-center pb-2 border-b border-orange-200/60">
+                  <span class="font-extrabold text-sm text-slate-800" id="previewDescricao">Nome do Produto</span>
+                  <span class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800" id="previewEstoqueBadge">Estoque: 0 un.</span>
                 </div>
-                <div class="flex justify-between">
-                  <span>Estoque Disponível: <b id="previewEstoque" class="text-emerald-700">0 unid.</b></span>
-                  <span>Página do Catálogo: <b id="previewPagina">Pág. -</b></span>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                  <div>
+                    <span class="text-slate-500 block">Custo Pago:</span>
+                    <b id="previewCusto" class="text-slate-800 text-xs">R$ 0,00</b>
+                  </div>
+                  <div>
+                    <span class="text-slate-500 block">Preço Revista:</span>
+                    <b id="previewRevista" class="text-orange-700 text-xs">R$ 0,00</b>
+                  </div>
+                  <div>
+                    <span class="text-slate-500 block">Página Revista:</span>
+                    <b id="previewPagina" class="text-slate-700 text-xs">Pág. -</b>
+                  </div>
+                  <div>
+                    <span class="text-slate-500 block">Venda Sugerida:</span>
+                    <b id="previewSugerido" class="text-emerald-700 text-xs">R$ 0,00</b>
+                  </div>
                 </div>
               </div>
 
@@ -476,15 +558,23 @@
         </div>
       </div>
 
-      <!-- TAB: CLIENTES -->
+      <!-- ================= TAB: CLIENTES (COM CRUD COMPLETO: CADASTRAR, EDITAR, EXCLUIR) ================= -->
       <div id="tab-clientes" class="tab-content hidden space-y-4">
         <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
             <div>
               <h2 class="font-extrabold text-lg text-slate-800">Carteira de Clientes</h2>
-              <p class="text-xs text-slate-600">Histórico de compradores e contatos para envio de promoções e felicitações.</p>
+              <p class="text-xs text-slate-600">Histórico de compradores, aniversários e gestão completa de cadastros.</p>
             </div>
-            <input type="text" id="filtroCliente" oninput="filtrarClientes()" placeholder="Buscar cliente por nome ou telefone..." class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full sm:w-64 focus:ring-2 focus:ring-orange-500">
+            
+            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <input type="text" id="filtroCliente" oninput="filtrarClientes()" placeholder="Buscar cliente por nome ou telefone..." class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full sm:w-60 focus:ring-2 focus:ring-orange-500">
+              
+              <!-- BOTÃO NOVO CLIENTE -->
+              <button onclick="abrirModalCliente()" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-orange-600/20 whitespace-nowrap">
+                <i class="fa-solid fa-user-plus"></i> Novo Cliente
+              </button>
+            </div>
           </div>
 
           <div class="overflow-x-auto rounded-xl border border-slate-100">
@@ -495,12 +585,13 @@
                   <th class="py-3 px-4">Telefone / WhatsApp</th>
                   <th class="py-3 px-4">E-mail</th>
                   <th class="py-3 px-3 text-center">Data de Nascimento</th>
-                  <th class="py-3 px-4 text-center">Ações Rápidas</th>
+                  <th class="py-3 px-3">Observações</th>
+                  <th class="py-3 px-4 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody id="tabelaClientesCorpo" class="divide-y divide-slate-100">
                 <tr>
-                  <td colspan="5" class="py-8 text-center text-slate-600">Nenhum cliente cadastrado ainda.</td>
+                  <td colspan="6" class="py-8 text-center text-slate-600">Nenhum cliente cadastrado ainda.</td>
                 </tr>
               </tbody>
             </table>
@@ -508,7 +599,7 @@
         </div>
       </div>
 
-      <!-- TAB: HISTÓRICO DE VENDAS -->
+      <!-- ================= TAB: HISTÓRICO DE VENDAS ================= -->
       <div id="tab-historico" class="tab-content hidden space-y-4">
         <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
           <div class="flex justify-between items-center mb-4">
@@ -543,7 +634,7 @@
         </div>
       </div>
 
-      <!-- TAB: NOVO PRODUTO -->
+      <!-- ================= TAB: NOVO PRODUTO ================= -->
       <div id="tab-novo-produto" class="tab-content hidden">
         <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-orange-100 p-6 shadow-sm">
           <h2 class="font-extrabold text-lg text-slate-800 mb-2 flex items-center gap-2">
@@ -606,12 +697,67 @@
     </main>
   </div>
 
-  <!-- Script Principal de Integração e Autenticação -->
+  <!-- ================= MODAL: CADASTRAR / EDITAR CLIENTE ================= -->
+  <div id="modalCliente" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-orange-100 relative animate-fadeIn">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="modalClienteTitulo" class="font-extrabold text-lg text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-user-plus text-orange-600"></i>
+          <span>Cadastrar Novo Cliente</span>
+        </h3>
+        <button onclick="fecharModalCliente()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="formClienteModal" onsubmit="salvarClienteModal(event)" class="space-y-4">
+        <input type="hidden" id="modalClienteId" value="">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome Completo *</label>
+          <input type="text" id="modalClienteNome" required placeholder="Ex: Juliana Santos" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Telefone / WhatsApp</label>
+            <input type="tel" id="modalClienteTelefone" placeholder="(11) 99999-9999" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">E-mail</label>
+            <input type="email" id="modalClienteEmail" placeholder="cliente@email.com" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data de Nascimento (Aniversário)</label>
+          <input type="date" id="modalClienteNascimento" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Observações</label>
+          <input type="text" id="modalClienteObs" placeholder="Ex: Prefere fragrâncias florais" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div class="flex gap-2 pt-3">
+          <button type="button" onclick="fecharModalCliente()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+            Cancelar
+          </button>
+          <button type="submit" id="btnSalvarClienteModal" class="w-1/2 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-check"></i> Salvar Cliente
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= SCRIPT PRINCIPAL ================= -->
   <script>
     const SUPABASE_URL = "https://evqjlgfhdpisxxbvxelh.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_YLDCZL8qtWXqIFEeH7QzfQ_zf7v5gcQ";
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // Polyfill defensivo para suportar tanto .table() quanto .from()
+    
+    // Polyfill defensivo para suportar tanto .from() quanto .table()
     if (!sbClient.table) {
       sbClient.table = function(tableName) { return sbClient.from(tableName); };
     }
@@ -619,6 +765,10 @@
     let produtosCache = [];
     let clientesCache = [];
     let vendasCache = [];
+
+    // Instâncias de Gráficos Chart.js
+    let chartFinanceiroInstance = null;
+    let chartCategoriasInstance = null;
 
     const NOMES_MESES = [
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -630,18 +780,24 @@
       return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    // Hash SHA-256 nativo no navegador
     async function sha256(str) {
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // Inicialização
     document.addEventListener("DOMContentLoaded", () => {
       verificarSessao();
+
+      // Fechar dropdown de produto ao clicar fora
+      document.addEventListener('click', (e) => {
+        const input = document.getElementById('buscaProdutoInput');
+        const dropdown = document.getElementById('dropdownResultadosProduto');
+        if (input && dropdown && !input.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.add('hidden');
+        }
+      });
     });
 
-    // Alternar visibilidade da senha no login
     function alternarVisibilidadeSenha() {
       const input = document.getElementById('loginSenha');
       const icon = document.getElementById('toggleSenhaIcon');
@@ -656,7 +812,6 @@
       }
     }
 
-    // Verificar se usuário já está logado
     function verificarSessao() {
       const usuarioSalvo = localStorage.getItem('vendas_barreto_user');
       if (usuarioSalvo) {
@@ -687,7 +842,6 @@
       carregarTudo();
     }
 
-    // Realizar Login
     async function fazerLogin(e) {
       if (e && e.preventDefault) e.preventDefault();
       let email = document.getElementById('loginEmail').value.trim().toLowerCase();
@@ -717,43 +871,31 @@
       try {
         const senhaHash = await sha256(senha);
 
-        // Consulta tabela 'usuarios' no Supabase
         const { data: users, error } = await sbClient
-          .table('usuarios')
+          .from('usuarios')
           .select('*')
           .eq('ativo', true);
 
         if (error) {
-          if (error.code === 'PGRST205' || error.message.includes('not find')) {
-            throw new Error("A tabela de usuários ainda não foi criada no Supabase. Execute o script 'schema_usuarios.sql' no Editor SQL do Supabase.");
-          }
-          throw error;
+          throw new Error("Erro de conexão com o banco: " + error.message);
         }
 
-        if (!users || users.length === 0) {
-          throw new Error("Nenhum usuário administrador cadastrado no banco.");
-        }
-
-        // Localiza usuário correspondente
         const user = users.find(u => {
           const uEmail = (u.email || '').toLowerCase().trim();
           return uEmail === email || (email.includes('rodrigo') && uEmail.includes('rodrigo')) || (email.includes('daniele') && uEmail.includes('daniele'));
         });
 
         if (!user) {
-          throw new Error("Usuário administrador não encontrado no banco.");
+          throw new Error("Usuário administrador não encontrado.");
         }
 
         const dbHash = String(user.senha_hash || '').trim();
-
-        // Aceita tanto senha direta quanto hash SHA-256
         const senhaCorreta = (dbHash === senha || dbHash === senhaHash);
 
         if (!senhaCorreta) {
           throw new Error("Senha incorreta. Verifique se digitou a senha correta.");
         }
 
-        // Salvar sessão
         const sessao = {
           id: user.id,
           nome: user.nome,
@@ -762,7 +904,6 @@
         };
         localStorage.setItem('vendas_barreto_user', JSON.stringify(sessao));
 
-        // Atualizar data de último login
         try {
           await sbClient.from('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
         } catch (e) {}
@@ -786,7 +927,6 @@
       }
     }
 
-    // Fazer Logout
     function fazerLogout() {
       Swal.fire({
         title: 'Deseja sair do sistema?',
@@ -805,7 +945,6 @@
       });
     }
 
-    // Alternar Abas
     function mudarAba(nome) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -820,9 +959,13 @@
         targetBtn.classList.remove('text-slate-600', 'hover:text-orange-600', 'hover:bg-orange-50');
         targetBtn.classList.add('bg-orange-600', 'text-white', 'shadow-sm');
       }
+
+      // Se mudar para dashboard, atualizar renderização dos gráficos
+      if (nome === 'dashboard') {
+        setTimeout(renderizarGraficosDashboard, 100);
+      }
     }
 
-    // Carregar todos os dados do Supabase
     async function carregarTudo(comAlerta = false) {
       const syncIcon = document.getElementById('syncIcon');
       if (syncIcon) syncIcon.classList.add('fa-spin');
@@ -841,11 +984,17 @@
         vendasCache = resVendas.data || [];
 
         renderizarDashboard();
+        renderizarGraficosDashboard();
         renderizarTabelaProdutos(produtosCache);
         renderizarCategorias();
-        renderizarSelectVenda();
         renderizarClientes(clientesCache);
         renderizarHistoricoVendas(vendasCache);
+
+        // Preenche datalist de clientes
+        const dl = document.getElementById('clientesList');
+        if (dl) {
+          dl.innerHTML = clientesCache.map(c => `<option value="${c.nome}">${c.telefone || ''}</option>`).join('');
+        }
 
         if (comAlerta) {
           Swal.fire({
@@ -868,6 +1017,7 @@
       }
     }
 
+    // Renderizar KPIs do Dashboard
     function renderizarDashboard() {
       let totalEstoqueQtd = 0;
       let totalEstoqueCusto = 0;
@@ -897,6 +1047,7 @@
       document.getElementById('badgeEstoque').textContent = totalEstoqueQtd;
       document.getElementById('badgeClientes').textContent = clientesCache.length;
 
+      // Aniversariantes do Mês Atual
       const mesAtualNum = new Date().getMonth() + 1;
       const aniversariantes = clientesCache.filter(c => {
         if (!c.data_nascimento) return false;
@@ -934,6 +1085,7 @@
         }).join('');
       }
 
+      // Baixo Estoque
       const baixoEstoque = produtosCache.filter(p => (p.quantidade_estoque || 0) <= 1).slice(0, 5);
       const divBaixo = document.getElementById('listaBaixoEstoque');
       if (baixoEstoque.length === 0) {
@@ -956,6 +1108,145 @@
       }
     }
 
+    // ================= GRÁFICOS DO DASHBOARD (CHART.JS) =================
+    function renderizarGraficosDashboard() {
+      // 1. Gráfico de Comparativo Financeiro
+      let totalPago = 0;
+      let totalRevista = 0;
+      produtosCache.forEach(p => {
+        const qtdComprada = p.quantidade_comprada || 0;
+        totalPago += qtdComprada * (p.vl_unit_pago || 0);
+        totalRevista += qtdComprada * (p.preco_revista || p.vl_unit_sugerido || 0);
+      });
+
+      let totalFaturado = 0;
+      let totalLucro = 0;
+      vendasCache.forEach(v => {
+        totalFaturado += parseFloat(v.vl_total_venda) || 0;
+        totalLucro += parseFloat(v.lucro_total) || 0;
+      });
+
+      const ctxFin = document.getElementById('chartComparativoFinanceiro');
+      if (ctxFin) {
+        if (chartFinanceiroInstance) {
+          chartFinanceiroInstance.destroy();
+        }
+
+        chartFinanceiroInstance = new Chart(ctxFin, {
+          type: 'bar',
+          data: {
+            labels: ['Quanto Paguei (Custo)', 'Valor Revista (Tabela)', 'Total Faturado', 'Lucro Realizado'],
+            datasets: [{
+              label: 'Valor (R$)',
+              data: [totalPago, totalRevista, totalFaturado, totalLucro],
+              backgroundColor: [
+                'rgba(234, 88, 12, 0.85)',   // Laranja Custo
+                'rgba(59, 130, 246, 0.85)',  // Azul Revista
+                'rgba(16, 185, 129, 0.85)',  // Verde Faturamento
+                'rgba(168, 85, 247, 0.85)'   // Roxo Lucro
+              ],
+              borderColor: [
+                '#ea580c',
+                '#3b82f6',
+                '#10b981',
+                '#a855f7'
+              ],
+              borderWidth: 1.5,
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return formataBRL(context.raw);
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return 'R$ ' + value.toLocaleString('pt-BR');
+                  },
+                  font: { size: 10 }
+                },
+                grid: { color: '#f1f5f9' }
+              },
+              x: {
+                ticks: { font: { size: 10, weight: 'bold' } },
+                grid: { display: false }
+              }
+            }
+          }
+        });
+      }
+
+      // 2. Gráfico Donut de Categorias
+      const categoriasMap = {};
+      produtosCache.forEach(p => {
+        const cat = p.categoria || 'Outros';
+        const custoTotalItem = (p.quantidade_comprada || 0) * (p.vl_unit_pago || 0);
+        categoriasMap[cat] = (categoriasMap[cat] || 0) + custoTotalItem;
+      });
+
+      const catLabels = Object.keys(categoriasMap);
+      const catValores = Object.values(categoriasMap);
+
+      const ctxCat = document.getElementById('chartCategorias');
+      if (ctxCat) {
+        if (chartCategoriasInstance) {
+          chartCategoriasInstance.destroy();
+        }
+
+        const coresPaleta = [
+          '#ea580c', '#f59e0b', '#10b981', '#3b82f6', 
+          '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#64748b'
+        ];
+
+        chartCategoriasInstance = new Chart(ctxCat, {
+          type: 'doughnut',
+          data: {
+            labels: catLabels,
+            datasets: [{
+              data: catValores,
+              backgroundColor: coresPaleta.slice(0, catLabels.length),
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '55%',
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { boxWidth: 12, font: { size: 10, weight: '600' } }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const val = context.raw;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                    return ` ${context.label}: ${formataBRL(val)} (${pct}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // ================= TABELA DE PRODUTOS =================
     function renderizarTabelaProdutos(produtos) {
       const tbody = document.getElementById('tabelaProdutosCorpo');
       if (!produtos || produtos.length === 0) {
@@ -1024,36 +1315,88 @@
       select.innerHTML = '<option value="">Todas as Categorias</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
-    function renderizarSelectVenda() {
-      const select = document.getElementById('vendaProdutoId');
-      const produtosComEstoque = produtosCache.filter(p => (p.quantidade_estoque || 0) > 0);
-      select.innerHTML = '<option value="">-- Selecione o produto --</option>' + produtosComEstoque.map(p => {
-        const preco = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
-        return `<option value="${p.id}">${p.codigo} - ${p.descricao} (Estoque: ${p.quantidade_estoque} | ${preco})</option>`;
-      }).join('');
+    // ================= BUSCA INTELIGENTE DE PRODUTOS PARA REGISTRAR VENDA =================
+    function buscarProdutosVenda(termo) {
+      const termoLimpo = termo.toLowerCase().trim();
+      const dropdown = document.getElementById('dropdownResultadosProduto');
+      const btnLimpar = document.getElementById('btnLimparBuscaProd');
 
-      const dl = document.getElementById('clientesList');
-      dl.innerHTML = clientesCache.map(c => `<option value="${c.nome}">${c.telefone || ''}</option>`).join('');
-    }
+      if (!dropdown) return;
 
-    function atualizarDadosProdutoSelecionado() {
-      const id = document.getElementById('vendaProdutoId').value;
-      const p = produtosCache.find(x => String(x.id) === String(id));
-      const infoBox = document.getElementById('vendaInfoBox');
-
-      if (!p) {
-        infoBox.classList.add('hidden');
-        document.getElementById('vendaPrecoUnit').value = '';
-        calcularTotaisVenda();
+      if (!termoLimpo) {
+        dropdown.classList.add('hidden');
+        if (btnLimpar) btnLimpar.classList.add('hidden');
         return;
       }
 
+      if (btnLimpar) btnLimpar.classList.remove('hidden');
+
+      // Filtra produtos com estoque disponível
+      const correspondentes = produtosCache.filter(p => {
+        const temEstoque = (p.quantidade_estoque || 0) > 0;
+        const match = p.descricao.toLowerCase().includes(termoLimpo) || p.codigo.toLowerCase().includes(termoLimpo) || (p.categoria && p.categoria.toLowerCase().includes(termoLimpo));
+        return temEstoque && match;
+      }).slice(0, 8); // Top 8 resultados
+
+      if (correspondentes.length === 0) {
+        dropdown.innerHTML = `
+          <div class="p-4 text-center text-xs text-slate-500">
+            Nenhum produto com estoque encontrado para "<b>${termo}</b>".
+          </div>
+        `;
+        dropdown.classList.remove('hidden');
+        return;
+      }
+
+      dropdown.innerHTML = correspondentes.map(p => {
+        const preco = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
+        const precoRevista = p.preco_revista ? `Revista: ${formataBRL(p.preco_revista)}` : '';
+        return `
+          <div onclick="selecionarProdutoVenda('${p.id}')" class="p-3 hover:bg-orange-50 cursor-pointer transition flex items-center justify-between text-left">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">#${p.codigo}</span>
+                <span class="text-xs font-bold text-slate-800">${p.descricao}</span>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5">${p.categoria || 'Geral'} ${precoRevista ? `• ${precoRevista}` : ''}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-black text-orange-600 block">${preco}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                ${p.quantidade_estoque} un.
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      dropdown.classList.remove('hidden');
+    }
+
+    function selecionarProdutoVenda(id) {
+      const p = produtosCache.find(x => String(x.id) === String(id));
+      const dropdown = document.getElementById('dropdownResultadosProduto');
+      const input = document.getElementById('buscaProdutoInput');
+      const btnLimpar = document.getElementById('btnLimparBuscaProd');
+      const infoBox = document.getElementById('vendaInfoBox');
+
+      if (dropdown) dropdown.classList.add('hidden');
+      if (!p) return;
+
+      document.getElementById('vendaProdutoId').value = p.id;
+      input.value = `${p.codigo} - ${p.descricao}`;
+      if (btnLimpar) btnLimpar.classList.remove('hidden');
+
+      // Preenche os dados de preview
       infoBox.classList.remove('hidden');
+      document.getElementById('previewDescricao').textContent = `${p.codigo} - ${p.descricao}`;
+      document.getElementById('previewEstoqueBadge').textContent = `Estoque: ${p.quantidade_estoque} un.`;
       document.getElementById('previewCusto').textContent = formataBRL(p.vl_unit_pago);
       document.getElementById('previewRevista').textContent = p.preco_revista ? formataBRL(p.preco_revista) : formataBRL(p.vl_unit_sugerido);
-      document.getElementById('previewEstoque').textContent = `${p.quantidade_estoque} unid.`;
-      document.getElementById('previewPagina').textContent = p.pagina_revista ? `Pág. ${p.pagina_revista}` : 'Sem pág.';
+      document.getElementById('previewPagina').textContent = p.pagina_revista ? `Pág. ${p.pagina_revista}` : '-';
+      document.getElementById('previewSugerido').textContent = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
 
+      // Preenche valores padrão de venda
       const precoSugerido = p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido || 0;
       document.getElementById('vendaPrecoUnit').value = precoSugerido.toFixed(2);
       document.getElementById('vendaQtd').max = p.quantidade_estoque;
@@ -1062,11 +1405,19 @@
       calcularTotaisVenda();
     }
 
+    function limparBuscaProduto() {
+      document.getElementById('buscaProdutoInput').value = '';
+      document.getElementById('vendaProdutoId').value = '';
+      document.getElementById('vendaInfoBox').classList.add('hidden');
+      document.getElementById('btnLimparBuscaProd').classList.add('hidden');
+      document.getElementById('dropdownResultadosProduto').classList.add('hidden');
+      document.getElementById('vendaPrecoUnit').value = '';
+      calcularTotaisVenda();
+    }
+
     function iniciarVendaDireta(id) {
       mudarAba('venda');
-      const select = document.getElementById('vendaProdutoId');
-      select.value = id;
-      atualizarDadosProdutoSelecionado();
+      selecionarProdutoVenda(id);
     }
 
     function calcularTotaisVenda() {
@@ -1092,7 +1443,7 @@
       const pId = document.getElementById('vendaProdutoId').value;
       const p = produtosCache.find(x => String(x.id) === String(pId));
       if (!p) {
-        Swal.fire('Atenção', 'Selecione um produto válido.', 'warning');
+        Swal.fire('Atenção', 'Pesquise e selecione um produto com estoque.', 'warning');
         return;
       }
 
@@ -1177,8 +1528,7 @@
         });
 
         document.getElementById('formVenda').reset();
-        document.getElementById('vendaInfoBox').classList.add('hidden');
-        calcularTotaisVenda();
+        limparBuscaProduto();
 
       } catch (err) {
         console.error("Erro ao salvar venda:", err);
@@ -1189,16 +1539,17 @@
       }
     }
 
+    // ================= GESTÃO DE CLIENTES (CRUD COMPLETO COM MODAL) =================
     function renderizarClientes(clientes) {
       const tbody = document.getElementById('tabelaClientesCorpo');
       if (!clientes || clientes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-600">Nenhum cliente cadastrado ainda.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-600">Nenhum cliente cadastrado ainda. Clique em "+ Novo Cliente" para adicionar.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = clientes.map(c => {
         const telFormatado = c.telefone ? c.telefone.replace(/\D/g, '') : '';
-        const msgWhats = encodeURIComponent(`Olá ${c.nome}! Tudo bem? Passando para te desejar uma excelente semana e apresentar nossas novidades e promoções especiais.`);
+        const msgWhats = encodeURIComponent(`Olá ${c.nome}! Tudo bem? Passando para te desejar uma excelente semana e apresentar nossas novidades e promoções.`);
         const linkWhats = telFormatado ? `https://wa.me/55${telFormatado}?text=${msgWhats}` : null;
 
         let nascimentoStr = '-';
@@ -1213,14 +1564,21 @@
             <td class="py-3 px-4 text-slate-600 font-mono">${c.telefone || '-'}</td>
             <td class="py-3 px-4 text-slate-600">${c.email || '-'}</td>
             <td class="py-3 px-3 text-center text-slate-600">${nascimentoStr}</td>
+            <td class="py-3 px-3 text-slate-500 text-xs truncate max-w-[150px]">${c.observacoes || '-'}</td>
             <td class="py-3 px-4 text-center">
-              ${linkWhats ? `
-                <a href="${linkWhats}" target="_blank" class="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm transition">
-                  <i class="fa-brands fa-whatsapp"></i> Conversar
-                </a>
-              ` : `
-                <span class="text-[10px] text-slate-600">Sem WhatsApp</span>
-              `}
+              <div class="flex items-center justify-center gap-1.5">
+                ${linkWhats ? `
+                  <a href="${linkWhats}" target="_blank" title="Conversar no WhatsApp" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition text-xs">
+                    <i class="fa-brands fa-whatsapp"></i>
+                  </a>
+                ` : ''}
+                <button onclick="editarClienteModal('${c.id}')" title="Editar Dados do Cliente" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition text-xs">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="confirmarExclusaoCliente('${c.id}', '${c.nome.replace(/'/g, "\\'")}')" title="Excluir Cliente" class="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition text-xs">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -1230,11 +1588,112 @@
     function filtrarClientes() {
       const busca = document.getElementById('filtroCliente').value.toLowerCase().trim();
       const filtrados = clientesCache.filter(c => {
-        return !busca || c.nome.toLowerCase().includes(busca) || (c.telefone && c.telefone.includes(busca));
+        return !busca || c.nome.toLowerCase().includes(busca) || (c.telefone && c.telefone.includes(busca)) || (c.email && c.email.toLowerCase().includes(busca));
       });
       renderizarClientes(filtrados);
     }
 
+    // Modal de Cliente
+    function abrirModalCliente() {
+      document.getElementById('modalClienteId').value = '';
+      document.getElementById('modalClienteTitulo').innerHTML = `<i class="fa-solid fa-user-plus text-orange-600"></i><span>Cadastrar Novo Cliente</span>`;
+      document.getElementById('formClienteModal').reset();
+      document.getElementById('modalCliente').classList.remove('hidden');
+      document.getElementById('modalClienteNome').focus();
+    }
+
+    function fecharModalCliente() {
+      document.getElementById('modalCliente').classList.add('hidden');
+    }
+
+    function editarClienteModal(id) {
+      const c = clientesCache.find(x => String(x.id) === String(id));
+      if (!c) return;
+
+      document.getElementById('modalClienteId').value = c.id;
+      document.getElementById('modalClienteTitulo').innerHTML = `<i class="fa-solid fa-pen-to-square text-orange-600"></i><span>Editar Cliente: ${c.nome}</span>`;
+      document.getElementById('modalClienteNome').value = c.nome || '';
+      document.getElementById('modalClienteTelefone').value = c.telefone || '';
+      document.getElementById('modalClienteEmail').value = c.email || '';
+      document.getElementById('modalClienteNascimento').value = c.data_nascimento || '';
+      document.getElementById('modalClienteObs').value = c.observacoes || '';
+
+      document.getElementById('modalCliente').classList.remove('hidden');
+      document.getElementById('modalClienteNome').focus();
+    }
+
+    async function salvarClienteModal(e) {
+      e.preventDefault();
+      const id = document.getElementById('modalClienteId').value;
+      const nome = document.getElementById('modalClienteNome').value.trim();
+      const telefone = document.getElementById('modalClienteTelefone').value.trim();
+      const email = document.getElementById('modalClienteEmail').value.trim();
+      const nascimento = document.getElementById('modalClienteNascimento').value || null;
+      const obs = document.getElementById('modalClienteObs').value.trim();
+
+      const btn = document.getElementById('btnSalvarClienteModal');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Salvando...`;
+
+      try {
+        const payload = {
+          nome: nome,
+          telefone: telefone,
+          email: email,
+          data_nascimento: nascimento,
+          observacoes: obs
+        };
+
+        if (id) {
+          // Edição
+          const res = await sbClient.from('clientes').update(payload).eq('id', id);
+          if (res.error) throw res.error;
+          Swal.fire('Sucesso!', 'Dados do cliente atualizados.', 'success');
+        } else {
+          // Novo Cadastro
+          const res = await sbClient.from('clientes').insert(payload);
+          if (res.error) throw res.error;
+          Swal.fire('Sucesso!', 'Cliente cadastrado com sucesso!', 'success');
+        }
+
+        fecharModalCliente();
+        await carregarTudo();
+
+      } catch (err) {
+        Swal.fire('Erro ao Salvar', err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-check"></i> Salvar Cliente`;
+      }
+    }
+
+    // Confirmação em tela para Exclusão de Cliente
+    async function confirmarExclusaoCliente(id, nome) {
+      const result = await Swal.fire({
+        title: 'Excluir Cliente?',
+        html: `Tem certeza que deseja excluir o cadastro de <b>${nome}</b>?<br><br><small class="text-red-600">Esta ação não poderá ser desfeita.</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await sbClient.from('clientes').delete().eq('id', id);
+        if (res.error) throw res.error;
+
+        await carregarTudo();
+        Swal.fire('Excluído!', 'O cliente foi removido da base de dados.', 'success');
+      } catch (err) {
+        Swal.fire('Erro ao Excluir', err.message, 'error');
+      }
+    }
+
+    // ================= HISTÓRICO DE VENDAS =================
     function renderizarHistoricoVendas(vendas) {
       const tbody = document.getElementById('tabelaVendasCorpo');
       if (!vendas || vendas.length === 0) {
@@ -1309,6 +1768,7 @@
       }
     }
 
+    // ================= NOVO PRODUTO =================
     async function salvarNovoProduto(e) {
       e.preventDefault();
       const codigo = document.getElementById('novoCodigo').value.trim();
