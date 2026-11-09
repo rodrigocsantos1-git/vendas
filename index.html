@@ -607,7 +607,7 @@
   <script>
     const SUPABASE_URL = "https://evqjlgfhdpisxxbvxelh.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_YLDCZL8qtWXqIFEeH7QzfQ_zf7v5gcQ";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let produtosCache = [];
     let clientesCache = [];
@@ -702,9 +702,6 @@
         document.getElementById('loginSenha').focus();
         return;
       }
-        erroDiv.classList.remove('hidden');
-        return;
-      }
 
       erroDiv.classList.add('hidden');
       btn.disabled = true;
@@ -714,7 +711,7 @@
         const senhaHash = await sha256(senha);
 
         // Consulta tabela 'usuarios' no Supabase
-        const { data: users, error } = await supabase
+        const { data: users, error } = await sbClient
           .table('usuarios')
           .select('*')
           .eq('ativo', true);
@@ -760,7 +757,7 @@
 
         // Atualizar data de último login
         try {
-          await supabase.table('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
+          await sbClient.table('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
         } catch (e) {}
 
         Swal.fire({
@@ -824,15 +821,15 @@
       if (syncIcon) syncIcon.classList.add('fa-spin');
 
       try {
-        const resProds = await supabase.table('produtos').select('*').order('descricao');
+        const resProds = await sbClient.table('produtos').select('*').order('descricao');
         if (resProds.error) throw resProds.error;
         produtosCache = resProds.data || [];
 
-        const resClientes = await supabase.table('clientes').select('*').order('nome');
+        const resClientes = await sbClient.table('clientes').select('*').order('nome');
         if (resClientes.error) throw resClientes.error;
         clientesCache = resClientes.data || [];
 
-        const resVendas = await supabase.table('vendas').select('*').order('data_venda', { ascending: false });
+        const resVendas = await sbClient.table('vendas').select('*').order('data_venda', { ascending: false });
         if (resVendas.error) throw resVendas.error;
         vendasCache = resVendas.data || [];
 
@@ -1133,12 +1130,12 @@
           observacoes: obs
         };
 
-        const resVenda = await supabase.table('vendas').insert(vendaPayload);
+        const resVenda = await sbClient.table('vendas').insert(vendaPayload);
         if (resVenda.error) throw resVenda.error;
 
         const novoEstoque = (p.quantidade_estoque || 0) - qtd;
         const novaQtdVendida = (p.quantidade_vendida || 0) + qtd;
-        const resProdUpdate = await supabase.table('produtos').update({
+        const resProdUpdate = await sbClient.table('produtos').update({
           quantidade_estoque: novoEstoque,
           quantidade_vendida: novaQtdVendida
         }).eq('id', p.id);
@@ -1147,7 +1144,7 @@
         if (clienteNome) {
           const clienteExistente = clientesCache.find(c => c.nome.toLowerCase() === clienteNome.toLowerCase());
           if (!clienteExistente) {
-            await supabase.table('clientes').insert({
+            await sbClient.table('clientes').insert({
               nome: clienteNome,
               telefone: clienteTel,
               email: clienteEmail,
@@ -1155,7 +1152,7 @@
               observacoes: `Primeira compra: ${p.descricao}`
             });
           } else if (clienteTel || clienteEmail || clienteNasc) {
-            await supabase.table('clientes').update({
+            await sbClient.table('clientes').update({
               telefone: clienteTel || clienteExistente.telefone,
               email: clienteEmail || clienteExistente.email,
               data_nascimento: clienteNasc || clienteExistente.data_nascimento
@@ -1284,14 +1281,14 @@
       if (!result.isConfirmed) return;
 
       try {
-        const resDel = await supabase.table('vendas').delete().eq('id', vendaId);
+        const resDel = await sbClient.table('vendas').delete().eq('id', vendaId);
         if (resDel.error) throw resDel.error;
 
         const p = produtosCache.find(x => x.codigo === codigo);
         if (p) {
           const novoEstoque = (p.quantidade_estoque || 0) + qtd;
           const novaVendida = Math.max(0, (p.quantidade_vendida || 0) - qtd);
-          await supabase.table('produtos').update({
+          await sbClient.table('produtos').update({
             quantidade_estoque: novoEstoque,
             quantidade_vendida: novaVendida
           }).eq('id', p.id);
@@ -1336,7 +1333,7 @@
           origem: 'MANUAL'
         };
 
-        const res = await supabase.table('produtos').insert(payload);
+        const res = await sbClient.table('produtos').insert(payload);
         if (res.error) throw res.error;
 
         await carregarTudo();
