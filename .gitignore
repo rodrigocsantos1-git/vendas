@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+
+# Database local (mantido como fallback)
+*.db-journal
+
+# Large PDFs (optional)
+# Catalogo.pdf is 85MB; GitHub limit is 100MB, so let's track it or leave it as needed.
