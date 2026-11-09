@@ -1036,13 +1036,58 @@ with tab_simulador:
         st.rerun()
 
 # ==========================================
-# ABA 8: PLANILHA & BACKUP
+# ABA 8: PLANILHA, SUPABASE & BACKUP
 # ==========================================
 with tab_export:
-    st.subheader("📥 Integração com Planilha Google & Exportação de Dados")
+    st.subheader("⚡ Conexão em Nuvem (Supabase & GitHub) & Exportação de Dados")
     
-    # Seção Google Sheets
-    st.markdown("### 🌐 Base de Dados no Google Sheets")
+    # Seção Supabase (Banco de Dados Seguro em Nuvem)
+    st.markdown("### 🛡️ Banco de Dados em Nuvem (Supabase)")
+    st.write("Conecte a sua aplicação ao **Supabase (PostgreSQL seguro em nuvem)** para sincronização automática de estoque, clientes e vendas:")
+    
+    import supabase_client
+    sb_cfg = supabase_client.get_supabase_config()
+    
+    col_sb1, col_sb2 = st.columns(2)
+    with col_sb1:
+        sb_url = st.text_input("Supabase Project URL:", value=sb_cfg.get("supabase_url", ""), placeholder="https://xxxxxxxxxxxx.supabase.co")
+    with col_sb2:
+        sb_key = st.text_input("Supabase API Key (anon ou service_role):", value=sb_cfg.get("supabase_key", ""), type="password", placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+        
+    col_sb_act1, col_sb_act2, col_sb_act3 = st.columns(3)
+    with col_sb_act1:
+        if st.button("💾 Salvar Credenciais do Supabase", type="primary", use_container_width=True):
+            if sb_url and sb_key:
+                supabase_client.set_supabase_config(sb_url, sb_key)
+                st.success("Credenciais do Supabase salvas!")
+                st.rerun()
+            else:
+                st.warning("Preencha a URL e a Chave antes de salvar.")
+                
+    with col_sb_act2:
+        if st.button("🔍 Testar Conexão Supabase", use_container_width=True):
+            ok_sb, msg_sb = supabase_client.test_supabase_connection()
+            if ok_sb:
+                st.success(f"✅ {msg_sb}")
+            else:
+                st.error(f"❌ {msg_sb}")
+                
+    with col_sb_act3:
+        if st.button("🚀 Migrar Dados Locais para Supabase", use_container_width=True):
+            ok_mig, msg_mig = supabase_client.sync_local_to_supabase()
+            if ok_mig:
+                st.success(f"🎉 {msg_mig}")
+            else:
+                st.error(f"Erro: {msg_mig}")
+
+    st.markdown("""
+    💡 *O script SQL para criar as tabelas e povoar todos os 38 produtos no Supabase já está pronto em [`schema_supabase.sql`](schema_supabase.sql). Basta colar no **SQL Editor** do Supabase e rodar.*
+    """)
+
+    st.divider()
+
+    # Seção Google Sheets (Mantida como alternativa)
+    st.markdown("### 🌐 Planilha Google Sheets (Opcional)")
     st.write("A sua aplicação está configurada para conectar diretamente com a sua planilha do Google Drive:")
     st.markdown(f"🔗 **Link da sua Planilha:** [{sheets_sync.GOOGLE_SHEET_URL}]({sheets_sync.GOOGLE_SHEET_URL})")
     
