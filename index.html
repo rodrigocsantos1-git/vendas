@@ -220,7 +220,7 @@
 
           <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
             <div>
-              <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Custo do Estoque</p>
+              <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Valor do Investimento</p>
               <p class="text-xl sm:text-2xl font-extrabold text-slate-800 mt-1" id="kpiEstoqueValor">R$ 0,00</p>
               <p class="text-[11px] text-emerald-600 font-medium mt-0.5">Valor pago na nota</p>
             </div>
@@ -365,6 +365,7 @@
                   <th class="py-3 px-3">Cód.</th>
                   <th class="py-3 px-3">Descrição do Produto</th>
                   <th class="py-3 px-3">Categoria</th>
+                  <th class="py-3 px-2 text-center">Data Compra</th>
                   <th class="py-3 px-2 text-center">Pág. Revista</th>
                   <th class="py-3 px-3 text-right">Preço Revista</th>
                   <th class="py-3 px-3 text-right">Preço Promo</th>
@@ -376,7 +377,7 @@
               </thead>
               <tbody id="tabelaProdutosCorpo" class="divide-y divide-slate-100">
                 <tr>
-                  <td colspan="10" class="py-8 text-center text-slate-600">Carregando produtos do Supabase...</td>
+                  <td colspan="11" class="py-8 text-center text-slate-600">Carregando produtos do Supabase...</td>
                 </tr>
               </tbody>
             </table>
@@ -450,7 +451,11 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data da Venda *</label>
+                  <input type="date" id="vendaData" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-700 focus:ring-2 focus:ring-orange-500">
+                </div>
                 <div>
                   <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Quantidade *</label>
                   <input type="number" id="vendaQtd" min="1" value="1" oninput="calcularTotaisVenda()" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-center font-bold focus:ring-2 focus:ring-orange-500">
@@ -602,10 +607,30 @@
       <!-- ================= TAB: HISTÓRICO DE VENDAS ================= -->
       <div id="tab-historico" class="tab-content hidden space-y-4">
         <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
             <div>
               <h2 class="font-extrabold text-lg text-slate-800">Histórico Completo de Vendas</h2>
-              <p class="text-xs text-slate-600">Todas as transações registradas no Supabase com opção de estorno.</p>
+              <p class="text-xs text-slate-600">Controle de pagamentos: vendas pagas ficam em <b class="text-emerald-600">verde</b> e pendentes há mais de 10 dias ficam em <b class="text-red-600">vermelho</b>.</p>
+            </div>
+
+            <!-- Controle de Data de Comparação (Não Pagamento) e Legenda -->
+            <div class="flex flex-wrap items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2">
+              <div class="flex items-center gap-2">
+                <label for="historicoDataRef" class="text-[11px] font-bold text-slate-700 uppercase whitespace-nowrap">
+                  <i class="fa-regular fa-calendar-check text-orange-600 mr-1"></i>Data de Comparação (Não Pagamento):
+                </label>
+                <input 
+                  type="date" 
+                  id="historicoDataRef" 
+                  onchange="renderizarHistoricoVendas(vendasCache)" 
+                  class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1 font-bold text-slate-800 focus:ring-2 focus:ring-orange-500"
+                >
+              </div>
+              <div class="flex items-center gap-2 text-[11px] font-bold border-l border-slate-200 pl-3">
+                <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">● Pago (Verde)</span>
+                <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">● Pendente ≤ 10 dias</span>
+                <span class="px-2 py-0.5 rounded-full bg-red-600 text-white shadow-sm">⚠️ Atraso > 10 dias (Vermelho)</span>
+              </div>
             </div>
           </div>
 
@@ -613,20 +638,21 @@
             <table class="w-full text-left text-xs text-slate-700">
               <thead class="bg-orange-50/70 text-slate-600 uppercase text-[10px] font-bold border-b border-orange-100">
                 <tr>
-                  <th class="py-3 px-3">Data/Hora</th>
+                  <th class="py-3 px-3">Data da Venda</th>
                   <th class="py-3 px-3">Produto</th>
                   <th class="py-3 px-2 text-center">Qtd</th>
                   <th class="py-3 px-3 text-right">Valor Total</th>
                   <th class="py-3 px-3 text-right">Lucro</th>
                   <th class="py-3 px-3">Cliente</th>
                   <th class="py-3 px-3">Pagamento</th>
+                  <th class="py-3 px-3 text-center">Dias s/ Pagar</th>
                   <th class="py-3 px-2 text-center">Status</th>
-                  <th class="py-3 px-3 text-center">Estornar</th>
+                  <th class="py-3 px-3 text-center">Ações / Estornar</th>
                 </tr>
               </thead>
               <tbody id="tabelaVendasCorpo" class="divide-y divide-slate-100">
                 <tr>
-                  <td colspan="9" class="py-8 text-center text-slate-600">Nenhuma venda registrada ainda.</td>
+                  <td colspan="10" class="py-8 text-center text-slate-600">Nenhuma venda registrada ainda.</td>
                 </tr>
               </tbody>
             </table>
@@ -644,7 +670,7 @@
           <p class="text-xs text-slate-600 mb-6">Adicione itens comprados ou produtos avulsos à base de dados do Supabase.</p>
 
           <form id="formNovoProduto" onsubmit="salvarNovoProduto(event)" class="space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Código do Produto *</label>
                 <input type="text" id="novoCodigo" required placeholder="Ex: 111197" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
@@ -652,6 +678,10 @@
               <div class="sm:col-span-2">
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Descrição Completa *</label>
                 <input type="text" id="novoDescricao" required placeholder="Ex: ESSENCIAL EXCLUSIVO MASCULINO 100ML" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data de Entrada *</label>
+                <input type="date" id="novoDataEntrada" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-700 focus:ring-2 focus:ring-orange-500">
               </div>
             </div>
 
@@ -780,12 +810,47 @@
       return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
+    function hojeISO() {
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const dia = String(hoje.getDate()).padStart(2, '0');
+      return `${ano}-${mes}-${dia}`;
+    }
+
+    function formataDataBR(valor) {
+      if (!valor) return '05/11/2026';
+      const str = String(valor).trim();
+      const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) {
+        return `${m[3]}/${m[2]}/${m[1]}`;
+      }
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('pt-BR');
+      }
+      return str;
+    }
+
+    function inicializarDatasPadrao() {
+      const hoje = hojeISO();
+      const vendaDataEl = document.getElementById('vendaData');
+      if (vendaDataEl && !vendaDataEl.value) vendaDataEl.value = hoje;
+
+      const histRefEl = document.getElementById('historicoDataRef');
+      if (histRefEl && !histRefEl.value) histRefEl.value = hoje;
+
+      const novoDataEl = document.getElementById('novoDataEntrada');
+      if (novoDataEl && !novoDataEl.value) novoDataEl.value = hoje;
+    }
+
     async function sha256(str) {
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+      inicializarDatasPadrao();
       verificarSessao();
 
       // Fechar dropdown de produto ao clicar fora
@@ -1250,7 +1315,7 @@
     function renderizarTabelaProdutos(produtos) {
       const tbody = document.getElementById('tabelaProdutosCorpo');
       if (!produtos || produtos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-600">Nenhum produto encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-600">Nenhum produto encontrado.</td></tr>`;
         return;
       }
 
@@ -1261,12 +1326,14 @@
         const custo = formataBRL(p.vl_unit_pago);
         const sugerido = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
         const pagina = p.pagina_revista ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">Pág. ${p.pagina_revista}</span>` : '-';
+        const dataCompra = formataDataBR(p.data_cadastro);
 
         return `
           <tr class="hover:bg-orange-50/40 transition">
             <td class="py-2.5 px-3 font-mono font-bold text-slate-600">${p.codigo}</td>
             <td class="py-2.5 px-3 font-semibold text-slate-800">${p.descricao}</td>
             <td class="py-2.5 px-3 text-slate-600"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-medium">${p.categoria || 'Geral'}</span></td>
+            <td class="py-2.5 px-2 text-center font-mono text-[11px] font-semibold text-slate-700">${dataCompra}</td>
             <td class="py-2.5 px-2 text-center">${pagina}</td>
             <td class="py-2.5 px-3 text-right font-medium text-slate-600">${precoRevista}</td>
             <td class="py-2.5 px-3 text-right">${precoPromo}</td>
@@ -1412,6 +1479,8 @@
       document.getElementById('btnLimparBuscaProd').classList.add('hidden');
       document.getElementById('dropdownResultadosProduto').classList.add('hidden');
       document.getElementById('vendaPrecoUnit').value = '';
+      const vendaDataEl = document.getElementById('vendaData');
+      if (vendaDataEl && !vendaDataEl.value) vendaDataEl.value = hojeISO();
       calcularTotaisVenda();
     }
 
@@ -1453,6 +1522,7 @@
         return;
       }
 
+      const dataVenda = document.getElementById('vendaData').value || hojeISO();
       const precoUnit = parseFloat(document.getElementById('vendaPrecoUnit').value) || 0;
       const totalVenda = qtd * precoUnit;
       const custoUnit = p.vl_unit_pago || 0;
@@ -1471,6 +1541,7 @@
 
       try {
         const vendaPayload = {
+          data_venda: dataVenda,
           codigo: p.codigo,
           descricao: p.descricao,
           quantidade: qtd,
@@ -1523,11 +1594,12 @@
         Swal.fire({
           icon: 'success',
           title: 'Venda Registrada com Sucesso!',
-          html: `<b>${qtd}x ${p.descricao}</b><br>Total: <b>${formataBRL(totalVenda)}</b><br>Cliente: <b>${clienteNome}</b><br><br><small class="text-emerald-600">Estoque atualizado no Supabase!</small>`,
+          html: `<b>${qtd}x ${p.descricao}</b><br>Data: <b>${formataDataBR(dataVenda)}</b><br>Total: <b>${formataBRL(totalVenda)}</b><br>Cliente: <b>${clienteNome}</b><br><br><small class="text-emerald-600">Estoque atualizado no Supabase!</small>`,
           confirmButtonColor: '#ea580c'
         });
 
         document.getElementById('formVenda').reset();
+        inicializarDatasPadrao();
         limparBuscaProduto();
 
       } catch (err) {
@@ -1697,39 +1769,140 @@
     function renderizarHistoricoVendas(vendas) {
       const tbody = document.getElementById('tabelaVendasCorpo');
       if (!vendas || vendas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-600">Nenhuma venda registrada até o momento.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-600">Nenhuma venda registrada até o momento.</td></tr>`;
         return;
       }
 
+      // Data de referência para comparação de não pagamento
+      const refInput = document.getElementById('historicoDataRef');
+      const dataRefISO = (refInput && refInput.value) ? refInput.value : hojeISO();
+      const dtRef = new Date(dataRefISO + 'T12:00:00');
+
       tbody.innerHTML = vendas.map(v => {
-        let dataStr = '-';
-        if (v.data_venda) {
-          const d = new Date(v.data_venda);
-          dataStr = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const dataStr = v.data_venda ? formataDataBR(v.data_venda) : '-';
+        const statusStr = v.status_pagamento || 'Recebido';
+        const isPago = (statusStr === 'Recebido' || statusStr === 'Pago');
+
+        // Cálculo de dias sem pagamento entre a data de venda e a data de não pagamento
+        let diasSemPagar = 0;
+        if (!isPago && v.data_venda) {
+          const vendaISO = String(v.data_venda).substring(0, 10);
+          const dtVenda = new Date(vendaISO + 'T12:00:00');
+          if (!isNaN(dtVenda.getTime()) && !isNaN(dtRef.getTime())) {
+            const diffMs = dtRef.getTime() - dtVenda.getTime();
+            diasSemPagar = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+          }
+        }
+
+        const atrasadoMais10Dias = (!isPago && diasSemPagar > 10);
+
+        // Definição de cores da linha e textos:
+        // - Quem estiver com status de Pago/Recebido deve ficar VERDE
+        // - Se não concluído e passar de 10 dias, o dado na tela deve ficar em VERMELHO
+        let rowClass = '';
+        let textClass = '';
+        let valorClass = '';
+        let lucroClass = '';
+        let badgeDiasHtml = '';
+        let badgeStatusHtml = '';
+
+        if (isPago) {
+          rowClass = 'bg-emerald-50/90 hover:bg-emerald-100/80 border-l-4 border-emerald-500 transition';
+          textClass = 'text-emerald-900 font-semibold';
+          valorClass = 'text-emerald-800 font-extrabold';
+          lucroClass = 'text-emerald-700 font-bold';
+          badgeDiasHtml = `
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              <i class="fa-solid fa-circle-check"></i> Pago (Em dia)
+            </span>
+          `;
+          badgeStatusHtml = `
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white shadow-sm">
+              Pago / Recebido
+            </span>
+          `;
+        } else if (atrasadoMais10Dias) {
+          rowClass = 'bg-red-100/90 hover:bg-red-200/80 border-l-4 border-red-600 transition';
+          textClass = 'text-red-800 font-extrabold';
+          valorClass = 'text-red-700 font-black';
+          lucroClass = 'text-red-700 font-extrabold';
+          badgeDiasHtml = `
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-red-600 text-white shadow-sm animate-pulse">
+              <i class="fa-solid fa-triangle-exclamation"></i> ${diasSemPagar} dias sem pagar
+            </span>
+          `;
+          badgeStatusHtml = `
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-red-600 text-white shadow-sm">
+              Pendente (+10d)
+            </span>
+          `;
+        } else {
+          rowClass = 'bg-amber-50/70 hover:bg-amber-100/70 border-l-4 border-amber-500 transition';
+          textClass = 'text-amber-900 font-semibold';
+          valorClass = 'text-slate-800 font-extrabold';
+          lucroClass = 'text-emerald-600 font-bold';
+          badgeDiasHtml = `
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+              <i class="fa-regular fa-clock"></i> ${diasSemPagar} dia(s) sem pagar
+            </span>
+          `;
+          badgeStatusHtml = `
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white">
+              Pendente
+            </span>
+          `;
         }
 
         return `
-          <tr class="hover:bg-orange-50/40 transition">
-            <td class="py-2.5 px-3 text-slate-600 font-mono text-[11px]">${dataStr}</td>
-            <td class="py-2.5 px-3 font-semibold text-slate-800">${v.descricao}</td>
-            <td class="py-2.5 px-2 text-center font-bold text-slate-700">${v.quantidade}</td>
-            <td class="py-2.5 px-3 text-right font-extrabold text-slate-800">${formataBRL(v.vl_total_venda)}</td>
-            <td class="py-2.5 px-3 text-right font-bold text-emerald-600">${formataBRL(v.lucro_total)}</td>
-            <td class="py-2.5 px-3 font-medium text-slate-700">${v.cliente || 'Consumidor'}</td>
-            <td class="py-2.5 px-3 text-slate-600"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-[10px]">${v.forma_pagamento || 'Pix'}</span></td>
-            <td class="py-2.5 px-2 text-center">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${v.status_pagamento === 'Recebido' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                ${v.status_pagamento || 'Recebido'}
-              </span>
-            </td>
+          <tr class="${rowClass}">
+            <td class="py-2.5 px-3 font-mono text-[11px] ${textClass}">${dataStr}</td>
+            <td class="py-2.5 px-3 ${textClass}">${v.descricao}</td>
+            <td class="py-2.5 px-2 text-center ${textClass}">${v.quantidade}</td>
+            <td class="py-2.5 px-3 text-right ${valorClass}">${formataBRL(v.vl_total_venda)}</td>
+            <td class="py-2.5 px-3 text-right ${lucroClass}">${formataBRL(v.lucro_total)}</td>
+            <td class="py-2.5 px-3 ${textClass}">${v.cliente || 'Consumidor'}</td>
+            <td class="py-2.5 px-3 ${textClass}"><span class="px-2 py-0.5 rounded-full bg-white/80 border border-slate-200 text-[10px] font-bold">${v.forma_pagamento || 'Pix'}</span></td>
+            <td class="py-2.5 px-3 text-center">${badgeDiasHtml}</td>
+            <td class="py-2.5 px-2 text-center">${badgeStatusHtml}</td>
             <td class="py-2.5 px-3 text-center">
-              <button onclick="estornarVenda(${v.id}, '${v.codigo}', ${v.quantidade})" title="Cancelar Venda e Devolver ao Estoque" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition">
-                <i class="fa-solid fa-trash-can"></i>
-              </button>
+              <div class="flex items-center justify-center gap-1.5">
+                <button 
+                  onclick="alternarStatusPagamento(${v.id}, '${statusStr}')" 
+                  title="${isPago ? 'Voltar para Pendente' : 'Confirmar Pagamento (Marcar como Pago)'}" 
+                  class="px-2 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1 ${isPago ? 'bg-slate-200/80 text-slate-700 hover:bg-amber-500 hover:text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'}"
+                >
+                  <i class="fa-solid ${isPago ? 'fa-rotate-left' : 'fa-check'}"></i>
+                  <span>${isPago ? 'Pendente' : 'Dar Baixa'}</span>
+                </button>
+                <button onclick="estornarVenda(${v.id}, '${v.codigo}', ${v.quantidade})" title="Cancelar Venda e Devolver ao Estoque" class="p-1.5 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
             </td>
           </tr>
         `;
       }).join('');
+    }
+
+    async function alternarStatusPagamento(vendaId, statusAtual) {
+      const isPago = (statusAtual === 'Recebido' || statusAtual === 'Pago');
+      const novoStatus = isPago ? 'Pendente' : 'Recebido';
+
+      try {
+        const res = await sbClient.from('vendas').update({ status_pagamento: novoStatus }).eq('id', vendaId);
+        if (res.error) throw res.error;
+
+        await carregarTudo();
+        Swal.fire({
+          icon: 'success',
+          title: novoStatus === 'Recebido' ? 'Pagamento Confirmado!' : 'Status Alterado para Pendente',
+          text: novoStatus === 'Recebido' ? 'A venda agora consta como Paga (Verde).' : 'A venda voltou para o status Pendente.',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } catch (err) {
+        Swal.fire('Erro', 'Não foi possível atualizar o status: ' + err.message, 'error');
+      }
     }
 
     async function estornarVenda(vendaId, codigo, qtd) {
@@ -1773,6 +1946,7 @@
       e.preventDefault();
       const codigo = document.getElementById('novoCodigo').value.trim();
       const desc = document.getElementById('novoDescricao').value.trim();
+      const dataEntrada = document.getElementById('novoDataEntrada').value || hojeISO();
       const cat = document.getElementById('novoCategoria').value.trim() || 'DIVERSOS';
       const qtd = parseInt(document.getElementById('novoQtd').value) || 1;
       const custo = parseFloat(document.getElementById('novoCusto').value) || 0;
@@ -1797,15 +1971,17 @@
           preco_revista: revista,
           preco_revista_promo: promo,
           pagina_revista: pag,
-          origem: 'MANUAL'
+          data_cadastro: new Date(dataEntrada + 'T12:00:00').toISOString(),
+          origem: `Entrada ${formataDataBR(dataEntrada)}`
         };
 
         const res = await sbClient.from('produtos').insert(payload);
         if (res.error) throw res.error;
 
         await carregarTudo();
-        Swal.fire('Sucesso!', 'Novo produto cadastrado no Supabase.', 'success');
+        Swal.fire('Sucesso!', `Novo produto cadastrado com data de entrada ${formataDataBR(dataEntrada)}.`, 'success');
         document.getElementById('formNovoProduto').reset();
+        inicializarDatasPadrao();
         mudarAba('produtos');
       } catch (err) {
         Swal.fire('Erro', 'Falha ao cadastrar produto: ' + err.message, 'error');
