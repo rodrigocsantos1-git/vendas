@@ -834,3 +834,104 @@ def processar_carga_nf_pdf(pdf_source):
         "skus_novos": skus_novos
     }
 
+def estornar_importacao_nf(identificador_unico_ou_chave, skus_info=None):
+    """
+    Remove ou estorna os dados inseridos por uma Nota Fiscal específica:
+    - Para SKUs que foram criados exclusivamente por esta NF:
+      * Se não houve vendas deles, são removidos do banco.
+      * Se já houve vendas, reduz a quantidade_comprada e quantidade_estoque pela quantidade desta NF.
+    - Para SKUs que já existiam e apenas tiveram estoque incrementado por esta NF:
+      * Subtrai a quantidade adicionada da quantidade_estoque e da quantidade_comprada.
+      * Preços e custos antigos continuam 100% preservados.
+    - Remove o registro da NF na tabela de notas fiscais e das observações dos produtos.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sb = None
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+        except Exception as e:
+            print("Aviso ao conectar com Supabase:", e)
+
+    chave = identificador_unico_ou_chave.strip()
+    tag_nf = f"[NF: {chave}]"
+
+    # 1. Se skus_info não for passado, tenta descobrir pelos produtos que têm a tag ou origem
+    produtos_atuais = get_produtos()
+    produtos_afetados = [p for p in produtos_atuais if chave in (p.get('observacoes') or '') or chave in (p.get('origem') or '')]
+
+    removidos = []
+    ajustados = []
+
+    if skus_info:
+        for s in skus_info.get('skus_novos', []):
+            cod = str(s['codigo']).strip()
+            qtd_add = int(s['qtd_adicionada'])
+            p = next((x for x in produtos_atuais if str(x['codigo']).strip() == cod), None)
+            if p:
+                if p.get('quantidade_vendida', 0) == 0 and p.get('quantidade_comprada', 0) <= qtd_add:
+                    # Pode excluir com segurança
+                    cursor.execute("DELETE FROM produtos WHERE id = ?", (p['id'],))
+                    if sb:
+                        try:
+                            sb.table("produtos").delete().eq("id", p['id']).execute()
+                        except Exception as e:
+                            print(f"Erro ao remover produto {cod} no Supabase:", e)
+                    removidos.append(f"{cod} - {p['descricao']}")
+                else:
+                    # Reduz a quantidade inserida
+                    n_est = max(0, int(p['quantidade_estoque']) - qtd_add)
+                    n_comp = max(0, int(p['quantidade_comprada']) - qtd_add)
+                    cursor.execute("UPDATE produtos SET quantidade_estoque = ?, quantidade_comprada = ? WHERE id = ?", (n_est, n_comp, p['id']))
+                    if sb:
+                        try:
+                            sb.table("produtos").update({"quantidade_estoque": n_est, "quantidade_comprada": n_comp}).eq("id", p['id']).execute()
+                        except Exception as e:
+                            pass
+                    ajustados.append(f"{cod} - {p['descricao']} (-{qtd_add} un)")
+
+        for s in skus_info.get('skus_atualizados', []):
+            cod = str(s['codigo']).strip()
+            qtd_add = int(s['qtd_adicionada'])
+            p = next((x for x in produtos_atuais if str(x['codigo']).strip() == cod), None)
+            if p:
+                n_est = max(0, int(p['quantidade_estoque']) - qtd_add)
+                n_comp = max(0, int(p['quantidade_comprada']) - qtd_add)
+                obs_limpa = (p.get('observacoes') or '').replace(tag_nf, '').strip()
+
+                cursor.execute("UPDATE produtos SET quantidade_estoque = ?, quantidade_comprada = ?, observacoes = ? WHERE id = ?", (n_est, n_comp, obs_limpa, p['id']))
+                if sb:
+                    try:
+                        sb.table("produtos").update({"quantidade_estoque": n_est, "quantidade_comprada": n_comp, "observacoes": obs_limpa}).eq("id", p['id']).execute()
+                    except Exception as e:
+                        pass
+                ajustados.append(f"{cod} - {p['descricao']} (-{qtd_add} un)")
+    else:
+        # Fallback genérico pelos produtos marcados
+        for p in produtos_afetados:
+            obs_limpa = (p.get('observacoes') or '').replace(tag_nf, '').strip()
+            cursor.execute("UPDATE produtos SET observacoes = ? WHERE id = ?", (obs_limpa, p['id']))
+            if sb:
+                try:
+                    sb.table("produtos").update({"observacoes": obs_limpa}).eq("id", p['id']).execute()
+                except Exception as e:
+                    pass
+
+    # Remove do banco local de notas fiscais
+    try:
+        cursor.execute("DELETE FROM notas_fiscais WHERE identificador_unico = ? OR chave_acesso = ?", (chave, chave))
+    except:
+        pass
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "sucesso": True,
+        "skus_removidos": removidos,
+        "skus_ajustados": ajustados
+    }
+
+

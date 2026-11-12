@@ -2641,7 +2641,19 @@
                   <p class="text-[11px] text-slate-500">${item.origem || 'NFC-e'} • Processado em ${item.dataHora || '-'}</p>
                 </div>
               </div>
-              <div>${statusBadge}</div>
+              <div class="flex items-center gap-2">
+                ${statusBadge}
+                ${item.sucesso ? `
+                  <button onclick="confirmarExclusaoNotaFiscal('${idx}')" class="px-2.5 py-1 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm" title="Excluir esta carga e remover os dados inseridos dela do banco de dados">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Excluir PDF & Estornar</span>
+                  </button>
+                ` : `
+                  <button onclick="removerLogTentativaFalha('${idx}')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg" title="Remover este log de erro">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                  </button>
+                `}
+              </div>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
@@ -2696,6 +2708,127 @@
           </div>
         `;
       }).join('');
+    }
+
+    function removerLogTentativaFalha(idx) {
+      try {
+        const salvos = JSON.parse(localStorage.getItem('vendas_barreto_logs_importacao') || '[]');
+        salvos.splice(idx, 1);
+        localStorage.setItem('vendas_barreto_logs_importacao', JSON.stringify(salvos));
+        renderizarLogsImportacao();
+      } catch (e) {}
+    }
+
+    async function confirmarExclusaoNotaFiscal(logIndex) {
+      const salvos = JSON.parse(localStorage.getItem('vendas_barreto_logs_importacao') || '[]');
+      const itemLog = salvos[logIndex];
+      if (!itemLog) return;
+
+      const qtdNovos = (itemLog.skusNovos || []).length;
+      const qtdAtualizados = (itemLog.skusAtualizados || []).length;
+      const totalUnidades = itemLog.totalUnidades || 0;
+
+      const result = await Swal.fire({
+        title: 'Excluir esta Nota Fiscal?',
+        html: `
+          <div class="text-left text-xs space-y-2">
+            <p>Você está prestes a excluir a carga da <b>${itemLog.origem || itemLog.arquivo}</b>.</p>
+            <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-800">
+              <p class="font-bold">⚠️ O que será desfeito no banco de dados:</p>
+              <ul class="list-disc list-inside mt-1 space-y-1">
+                <li><b>${qtdNovos} SKU(s) novos</b> inseridos por esta nota serão <b>removidos do catálogo</b>.</li>
+                <li><b>${qtdAtualizados} SKU(s) anteriores</b> terão as <b>quantidades subtraídas</b> do estoque (o que já existia antes não é afetado).</li>
+                <li>Total de <b>-${totalUnidades} unidades</b> serão estornadas do saldo de estoque no Supabase.</li>
+                <li>A Nota Fiscal será liberada caso precise ser importada novamente com correções.</li>
+              </ul>
+            </div>
+          </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Sim, excluir e estornar dados',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (!result.isConfirmed) return;
+
+      Swal.fire({
+        title: 'Estornando dados no Supabase...',
+        html: 'Ajustando quantidades e removendo SKUs desta nota...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      try {
+        // Busca os produtos mais recentes
+        const resAtual = await sbClient.from('produtos').select('*');
+        if (resAtual.error) throw resAtual.error;
+        const produtosAtuais = resAtual.data || [];
+
+        const tagNF = itemLog.idUnicoNF ? `[NF: ${itemLog.idUnicoNF}]` : '';
+
+        // 1. Estorna SKUs novos que foram criados exclusivamente por esta nota
+        for (const s of (itemLog.skusNovos || [])) {
+          const cod = String(s.codigo).trim();
+          const qtdAdd = parseInt(s.qtd_adicionada) || 0;
+          const p = produtosAtuais.find(x => String(x.codigo).trim() === cod);
+          if (p) {
+            if ((p.quantidade_vendida || 0) === 0 && (p.quantidade_comprada || 0) <= qtdAdd) {
+              // Produto nunca foi vendido e só veio desta nota: exclui do banco
+              await sbClient.from('produtos').delete().eq('id', p.id);
+            } else {
+              // Teve vendas ou entradas adicionais: apenas desconta o estoque da nota
+              const nEstoque = Math.max(0, (p.quantidade_estoque || 0) - qtdAdd);
+              const nComprada = Math.max(0, (p.quantidade_comprada || 0) - qtdAdd);
+              await sbClient.from('produtos').update({
+                quantidade_estoque: nEstoque,
+                quantidade_comprada: nComprada
+              }).eq('id', p.id);
+            }
+          }
+        }
+
+        // 2. Estorna SKUs que já existiam e só tiveram o estoque incrementado por esta nota
+        for (const s of (itemLog.skusAtualizados || [])) {
+          const cod = String(s.codigo).trim();
+          const qtdAdd = parseInt(s.qtd_adicionada) || 0;
+          const p = produtosAtuais.find(x => String(x.codigo).trim() === cod);
+          if (p) {
+            const nEstoque = Math.max(0, (p.quantidade_estoque || 0) - qtdAdd);
+            const nComprada = Math.max(0, (p.quantidade_comprada || 0) - qtdAdd);
+            let obsLimpa = p.observacoes || '';
+            if (tagNF) obsLimpa = obsLimpa.replace(tagNF, '').trim();
+
+            await sbClient.from('produtos').update({
+              quantidade_estoque: nEstoque,
+              quantidade_comprada: nComprada,
+              observacoes: obsLimpa
+            }).eq('id', p.id);
+          }
+        }
+
+        // 3. Remove o registro deste log
+        salvos.splice(logIndex, 1);
+        localStorage.setItem('vendas_barreto_logs_importacao', JSON.stringify(salvos));
+
+        await carregarTudo();
+        renderizarLogsImportacao();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Nota Fiscal Excluída!',
+          text: `Os dados e unidades vinculados à ${itemLog.origem || itemLog.arquivo} foram removidos com sucesso do Supabase.`,
+          confirmButtonColor: '#ea580c'
+        });
+
+      } catch (err) {
+        console.error("Erro ao estornar nota fiscal:", err);
+        Swal.fire('Erro ao Excluir', 'Falha ao estornar dados no banco: ' + err.message, 'error');
+      }
     }
 
     function limparHistoricoImportacoes() {
