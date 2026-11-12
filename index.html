@@ -201,6 +201,11 @@
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span>Histórico de Vendas</span>
         </button>
+        <button onclick="mudarAba('importacoes')" id="tabBtn-importacoes" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+          <i class="fa-solid fa-file-lines"></i>
+          <span>Log de Importações (PDF)</span>
+          <span id="badgeLogsImportacao" class="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-extrabold">0</span>
+        </button>
         <button onclick="mudarAba('novo-produto')" id="tabBtn-novo-produto" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
           <i class="fa-solid fa-plus"></i>
           <span>Novo Produto</span>
@@ -737,6 +742,39 @@
         </div>
       </div>
 
+      <!-- ================= TAB: LOG DE IMPORTAÇÕES (PDF) ================= -->
+      <div id="tab-importacoes" class="tab-content hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-sm">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                </span>
+                <h2 class="font-extrabold text-lg text-slate-800">Histórico & Logs de Importação (Notas Fiscais em PDF)</h2>
+              </div>
+              <p class="text-xs text-slate-600 mt-1">Acompanhe detalhadamente todas as cargas de notas fiscais, conferindo SKUs novos e incrementos de estoque.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="document.getElementById('inputNotaFiscalPDF').click()" class="px-3.5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-orange-600/20">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Subir Novo PDF</span>
+              </button>
+              <button onclick="limparHistoricoImportacoes()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition" title="Limpar logs">
+                <i class="fa-solid fa-eraser"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="containerLogsImportacao" class="space-y-4">
+            <div class="p-8 text-center text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs">
+              <i class="fa-solid fa-file-circle-check text-2xl text-slate-400 mb-2 block"></i>
+              Nenhuma carga de Nota Fiscal registrada ainda. Quando você subir uma Nota Fiscal, o log detalhado aparecerá aqui.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ================= TAB: NOVO PRODUTO ================= -->
       <div id="tab-novo-produto" class="tab-content hidden">
         <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-orange-100 p-6 shadow-sm">
@@ -1112,6 +1150,9 @@
       if (nome === 'dashboard') {
         setTimeout(renderizarGraficosDashboard, 100);
       }
+      if (nome === 'importacoes') {
+        renderizarLogsImportacao();
+      }
     }
 
     async function carregarTudo(comAlerta = false) {
@@ -1137,6 +1178,7 @@
         renderizarCategorias();
         renderizarClientes(clientesCache);
         renderizarHistoricoVendas(vendasCache);
+        renderizarLogsImportacao();
 
         // Preenche datalist de clientes
         const dl = document.getElementById('clientesList');
@@ -2407,79 +2449,134 @@
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let fullText = '';
+
       for (let p = 1; p <= pdf.numPages; p++) {
         const page = await pdf.getPage(p);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(it => it.str).join('\n');
-        fullText += pageText + '\n';
+        const items = textContent.items || [];
+
+        // Agrupa os itens de texto geometricamente por linha (coordenada Y),
+        // garantindo que textos quebrados fiquem na ordem correta de leitura
+        const linesMap = {};
+        for (const it of items) {
+          const str = (it.str || '').trim();
+          if (!str) continue;
+          const y = it.transform ? Math.round(it.transform[5]) : 0;
+          const x = it.transform ? Math.round(it.transform[4]) : 0;
+
+          let foundKey = null;
+          for (const k in linesMap) {
+            if (Math.abs(Number(k) - y) <= 4) {
+              foundKey = k;
+              break;
+            }
+          }
+          if (foundKey === null) {
+            foundKey = y;
+            linesMap[foundKey] = [];
+          }
+          linesMap[foundKey].push({ str: str, x: x });
+        }
+
+        // No PDF as coordenadas Y crescem de baixo para cima, portanto ordenamos Y decrescente
+        const sortedYs = Object.keys(linesMap).map(Number).sort((a, b) => b - a);
+        for (const y of sortedYs) {
+          const lineTokens = linesMap[y].sort((a, b) => a.x - b.x).map(t => t.str);
+          fullText += lineTokens.join(' ') + '\n';
+        }
+        fullText += '\n';
       }
       return fullText;
     }
 
     function parseLinhasNotaFiscal(fullText) {
-      const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
       const items = [];
-      let i = 0;
+      const footerIdx = fullText.search(/(?:Qtde|total de itens)/i);
+      const bodyText = footerIdx !== -1 ? fullText.substring(0, footerIdx) : fullText;
 
-      while (i < lines.length) {
-        const line = lines[i];
-        if (line.includes('Qtde') || line.includes('total de itens')) {
-          break;
-        }
+      // 1. TENTATIVA POR BLOCOS (Suporta múltiplos formatos e quebras de linha entre valores)
+      const matches = Array.from(bodyText.matchAll(/(?:^|\n)\s*(\d{4,7})\s+/g));
 
-        const match = line.match(/^(\d{3,7})\s+(.+?)\s+(\d+)\s+([\d\.,]+)\s+([\d\.,]+)$/);
-        if (match) {
-          const code = match[1];
-          const descInicial = match[2];
-          const qtd = parseInt(match[3]) || 1;
-          const vlUnit = parseFloat(match[4].replace(',', '.')) || 0;
-          const vlTot = parseFloat(match[5].replace('.', '').replace(',', '.')) || 0;
+      if (matches.length > 0) {
+        for (let i = 0; i < matches.length; i++) {
+          const start = matches[i].index;
+          const end = (i + 1 < matches.length) ? matches[i + 1].index : bodyText.length;
+          const block = bodyText.substring(start, end).trim();
 
-          const extraDesc = [];
+          const mCode = block.match(/^\s*(\d{4,7})\s+([\s\S]*)/);
+          if (!mCode) continue;
+
+          const code = mCode[1];
+          const rest = mCode[2];
+
+          // Extrai Desconto se presente
           let descVal = 0.0;
-          let j = i + 1;
-
-          while (j < lines.length) {
-            const sub = lines[j];
-            if (sub.match(/^(\d{3,7})\s+/) || sub.includes('Qtde')) {
-              break;
-            }
-            if (sub.includes('Desconto')) {
-              const dm = sub.match(/Desconto\s*(-?[\d\.,]+)/);
-              if (dm) {
-                descVal = -Math.abs(parseFloat(dm[1].replace('.', '').replace(',', '.')) || 0);
-              }
-              j++;
-              break;
-            } else {
-              extraDesc.push(sub);
-            }
-            j++;
+          const mDesc = rest.match(/Desconto\s*(-?[\d\.,]+)/i);
+          if (mDesc) {
+            descVal = -Math.abs(parseFloat(mDesc[1].replace('.', '').replace(',', '.')) || 0);
           }
-          i = j;
 
-          let descFinal = (descInicial + ' ' + extraDesc.join(' ')).trim();
-          descFinal = descFinal.replace(/\s+(PC|UNI|UN|CX|KIT)\s*$/i, '').replace(/\s+\d+\s*$/, '').trim();
+          // Corpo sem a linha de desconto
+          const body = rest.replace(/Desconto[\s\S]*/i, '').trim();
+
+          // Encontra valores monetários (Ex: 34,90)
+          const currMatches = Array.from(body.matchAll(/(?:R\$\s*)?(\d{1,4}[,\.]\d{2})/g));
+          let vlUnit = 0.0;
+          let vlTot = 0.0;
+
+          if (currMatches.length >= 2) {
+            vlUnit = parseFloat(currMatches[currMatches.length - 2][1].replace('.', '').replace(',', '.')) || 0;
+            vlTot = parseFloat(currMatches[currMatches.length - 1][1].replace('.', '').replace(',', '.')) || 0;
+          } else if (currMatches.length === 1) {
+            vlTot = parseFloat(currMatches[0][1].replace('.', '').replace(',', '.')) || 0;
+            vlUnit = vlTot;
+          }
+
+          // Detecta Quantidade (procura inteiro isolado, ignorando números de gramatura como 5X90G ou 100ML)
+          const bodySemValores = body.replace(/(?:R\$\s*)?\d{1,4}[,\.]\d{2}/g, '');
+          let cleanParaQtd = bodySemValores.replace(/\d+[Xx]\d+[A-Za-z]*/g, '');
+          cleanParaQtd = cleanParaQtd.replace(/\d+\s*(?:ml|g|kg|l)\b/gi, '');
+          const mIsolados = Array.from(cleanParaQtd.matchAll(/\b(\d{1,2})\b/g));
+          let qtd = 1;
+          if (mIsolados.length > 0) {
+            qtd = parseInt(mIsolados[mIsolados.length - 1][1]) || 1;
+          }
+
+          // Monta a descrição limpa
+          const descTokens = [];
+          const lines = body.split('\n');
+          for (const l of lines) {
+            let cl = l.replace(/(?:R\$\s*)?\d{1,4}[,\.]\d{2}/g, '');
+            cl = cl.replace(/\b(PC|UN|UNI|CX|KIT)\b/gi, '');
+            const toks = cl.trim().split(/\s+/).filter(Boolean);
+            for (const t of toks) {
+              if (t.match(/^\d{1,2}$/) && parseInt(t) === qtd && mIsolados.some(x => x[1] === t)) {
+                continue;
+              }
+              descTokens.push(t);
+            }
+          }
+
+          let descFinal = descTokens.join(' ').trim();
+          descFinal = descFinal.replace(/\s+(PC|UNI|UN|CX|KIT)\s*$/i, '').trim();
 
           const vlPagoUnit = qtd > 0 ? parseFloat(((vlTot + descVal) / qtd).toFixed(2)) : 0;
           const descUnit = qtd > 0 ? parseFloat((Math.abs(descVal) / qtd).toFixed(2)) : 0;
 
           items.push({
             codigo: code,
-            descricao: descFinal,
+            descricao: descFinal || `PRODUTO NATURA ${code}`,
             quantidade: qtd,
-            vl_unit_sugerido: vlUnit,
+            vl_unit_sugerido: vlUnit > 0 ? vlUnit : vlTot,
             vl_total_sugerido: vlTot,
             desconto_total: descVal,
             desconto_compra_unit: descUnit,
             vl_unit_pago: vlPagoUnit
           });
-        } else {
-          i++;
         }
       }
 
-      // Agrupa itens do mesmo SKU dentro da mesma nota somando a quantidade
+      // Agrupa itens do mesmo SKU dentro da mesma nota fiscal somando as quantidades
       const agrupados = {};
       for (const it of items) {
         const cod = it.codigo;
@@ -2496,6 +2593,128 @@
         itensRaw: items,
         itensAgrupados: Object.values(agrupados)
       };
+    }
+
+    // ================= GERENCIAMENTO DE LOGS DE IMPORTAÇÃO =================
+    function salvarLogImportacao(logItem) {
+      try {
+        const salvos = JSON.parse(localStorage.getItem('vendas_barreto_logs_importacao') || '[]');
+        salvos.unshift(logItem); // mais recente primeiro
+        if (salvos.length > 50) salvos.pop();
+        localStorage.setItem('vendas_barreto_logs_importacao', JSON.stringify(salvos));
+        renderizarLogsImportacao();
+      } catch (e) {
+        console.error('Erro ao salvar log:', e);
+      }
+    }
+
+    function renderizarLogsImportacao() {
+      const container = document.getElementById('containerLogsImportacao');
+      const badge = document.getElementById('badgeLogsImportacao');
+      if (!container) return;
+
+      const salvos = JSON.parse(localStorage.getItem('vendas_barreto_logs_importacao') || '[]');
+      if (badge) badge.textContent = salvos.length;
+
+      if (salvos.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs">
+            <i class="fa-solid fa-file-circle-check text-2xl text-slate-400 mb-2 block"></i>
+            Nenhuma carga de Nota Fiscal registrada ainda. Quando você subir uma Nota Fiscal, o log detalhado aparecerá aqui.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = salvos.map((item, idx) => {
+        const statusBadge = item.sucesso ? 
+          '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300"><i class="fa-solid fa-circle-check mr-1"></i>Importado com Sucesso</span>' : 
+          '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-red-100 text-red-800 border border-red-300"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Falha</span>';
+
+        return `
+          <div class="p-4 rounded-2xl border border-orange-100 bg-white shadow-sm space-y-3">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-2 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold font-mono">#${salvos.length - idx}</span>
+                <div>
+                  <h4 class="font-extrabold text-sm text-slate-800">${item.arquivo || 'Nota Fiscal (PDF)'}</h4>
+                  <p class="text-[11px] text-slate-500">${item.origem || 'NFC-e'} • Processado em ${item.dataHora || '-'}</p>
+                </div>
+              </div>
+              <div>${statusBadge}</div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div class="p-2 rounded-xl bg-slate-50">
+                <span class="text-[10px] text-slate-500 block">Total Unidades:</span>
+                <span class="font-black text-slate-800 text-sm">+${item.totalUnidades || 0} un</span>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-50">
+                <span class="text-[10px] text-slate-500 block">SKUs na Nota:</span>
+                <span class="font-bold text-slate-700 text-sm">${item.totalSkus || 0}</span>
+              </div>
+              <div class="p-2 rounded-xl bg-emerald-50/60 border border-emerald-100">
+                <span class="text-[10px] text-emerald-700 block font-semibold">SKUs Incrementados:</span>
+                <span class="font-black text-emerald-800 text-sm">${(item.skusAtualizados || []).length}</span>
+              </div>
+              <div class="p-2 rounded-xl bg-blue-50/60 border border-blue-100">
+                <span class="text-[10px] text-blue-700 block font-semibold">Novos SKUs:</span>
+                <span class="font-black text-blue-800 text-sm">${(item.skusNovos || []).length}</span>
+              </div>
+            </div>
+
+            <!-- Detalhamento dos SKUs desta importação -->
+            <div class="pt-2 text-xs space-y-2">
+              ${(item.skusAtualizados && item.skusAtualizados.length > 0) ? `
+                <div>
+                  <span class="text-[11px] font-bold text-emerald-700 block mb-1">🟢 SKUs Existentes que receberam mais estoque:</span>
+                  <div class="space-y-1">
+                    ${item.skusAtualizados.map(s => `
+                      <div class="flex justify-between items-center p-1.5 rounded-lg bg-emerald-50 text-[11px]">
+                        <span class="font-bold text-slate-800 truncate mr-2">#${s.codigo} ${s.descricao}</span>
+                        <span class="font-black text-emerald-800 whitespace-nowrap">+${s.qtd_adicionada} un (Era ${s.estoque_anterior} ➔ ${s.novo_estoque})</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${(item.skusNovos && item.skusNovos.length > 0) ? `
+                <div>
+                  <span class="text-[11px] font-bold text-blue-700 block mb-1">✨ Novos SKUs Inseridos no Catálogo:</span>
+                  <div class="space-y-1">
+                    ${item.skusNovos.map(s => `
+                      <div class="flex justify-between items-center p-1.5 rounded-lg bg-blue-50 text-[11px]">
+                        <span class="font-bold text-slate-800 truncate mr-2">#${s.codigo} ${s.descricao}</span>
+                        <span class="font-black text-blue-800 whitespace-nowrap">${s.qtd_adicionada} un • Custo: ${formataBRL(s.vl_unit_pago)}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function limparHistoricoImportacoes() {
+      Swal.fire({
+        title: 'Limpar logs de importação?',
+        text: 'O histórico exibido nesta tela será apagado (os dados de produtos no Supabase não serão afetados).',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#ea580c',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Sim, limpar',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          localStorage.removeItem('vendas_barreto_logs_importacao');
+          renderizarLogsImportacao();
+          Swal.fire('Limpo!', 'O histórico de logs foi limpo.', 'success');
+        }
+      });
     }
 
     async function processarUploadNotaFiscal(inputElement) {
@@ -2674,20 +2893,52 @@
 
         htmlDetalhes += `</div>`;
 
+        // Salva histórico de importação no Log
+        salvarLogImportacao({
+          arquivo: file.name,
+          origem: origemNF,
+          dataHora: new Date().toLocaleString('pt-BR'),
+          totalUnidades: totalUnidadesNovas,
+          totalSkus: itensAgrupados.length,
+          skusAtualizados: skusAtualizados,
+          skusNovos: skusNovos,
+          sucesso: true
+        });
+
         Swal.fire({
           icon: 'success',
           title: 'Estoque Atualizado com Sucesso!',
           html: htmlDetalhes,
           confirmButtonColor: '#ea580c',
-          confirmButtonText: 'Entendido'
+          confirmButtonText: 'Ver no Log de Importações'
+        }).then(() => {
+          mudarAba('importacoes');
         });
 
       } catch (err) {
         console.error("Erro ao subir Nota Fiscal em PDF:", err);
+
+        salvarLogImportacao({
+          arquivo: file.name,
+          origem: 'Tentativa de Importação',
+          dataHora: new Date().toLocaleString('pt-BR'),
+          totalUnidades: 0,
+          totalSkus: 0,
+          skusAtualizados: [],
+          skusNovos: [],
+          sucesso: false,
+          erro: err.message
+        });
+
         Swal.fire({
           icon: 'error',
           title: 'Falha no Processamento da Nota Fiscal',
-          text: err.message
+          html: `
+            <div class="text-left text-xs space-y-2">
+              <p class="text-red-700 font-bold">${err.message}</p>
+              <p class="text-slate-500">O log com esta tentativa foi registrado na aba <b>"Log de Importações (PDF)"</b>.</p>
+            </div>
+          `
         });
       } finally {
         inputElement.value = '';
