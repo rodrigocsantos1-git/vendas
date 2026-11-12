@@ -393,6 +393,78 @@ with tab_estoque:
     st.subheader("📋 Catálogo de Produtos, Estoque & Edição de Preços")
     st.write("Você tem **total liberdade para editar**: a quantidade em estoque, o custo que pagou, o valor da revista, o desconto a repassar e o preço final de venda. Pode editar diretamente na tabela ou pelo formulário detalhado abaixo.")
     
+    # ========================================================
+    # SEÇÃO: SUBIR CONTROLE DE ESTOQUE COM PDF (NOTA FISCAL)
+    # ========================================================
+    with st.expander("📄 Subir Estoque com Nota Fiscal (PDF)", expanded=False):
+        st.markdown("""
+        **Importação Inteligente de Nota Fiscal (PDF):**
+        - O que for inserido **não remove o estoque anterior**.
+        - Se o **SKU já existir**, adiciona **apenas a quantidade nova** e **mantém intacto tudo o que já estava configurado** (preços, custos e descontos anteriores não são alterados).
+        - Se for um **novo SKU**, adiciona o produto com os valores da compra extraídos da Nota Fiscal.
+        """)
+        
+        col_up_pdf1, col_up_pdf2 = st.columns([2, 1])
+        with col_up_pdf1:
+            uploaded_nf_pdf = st.file_uploader(
+                "Selecione o arquivo da Nota Fiscal de Compra (.pdf):", 
+                type=["pdf"], 
+                key="uploader_nf_pdf"
+            )
+        with col_up_pdf2:
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            btn_processar_pdf = st.button("🚀 Processar e Atualizar Estoque", type="primary", use_container_width=True, disabled=(uploaded_nf_pdf is None))
+            
+        if btn_processar_pdf and uploaded_nf_pdf is not None:
+            try:
+                with st.spinner("Lendo Nota Fiscal e sincronizando estoque..."):
+                    pdf_bytes = uploaded_nf_pdf.read()
+                    resultado_carga = db.processar_carga_nf_pdf(pdf_bytes)
+                    
+                    st.success(f"🎉 **Nota Fiscal processada com sucesso!** Origem: {resultado_carga['metadata']['origem']}")
+                    
+                    col_res1, col_res2, col_res3 = st.columns(3)
+                    col_res1.metric("Total de Unidades Inseridas", f"+{resultado_carga['total_unidades']} un.")
+                    col_res2.metric("SKUs Já em Estoque (Incrementados)", len(resultado_carga['skus_atualizados']))
+                    col_res3.metric("Novos SKUs Cadastrados", len(resultado_carga['skus_novos']))
+                    
+                    if resultado_carga['skus_atualizados']:
+                        st.markdown("##### 🟢 SKUs Existentes (Quantidade Adicionada ao Estoque):")
+                        df_up_atu = pd.DataFrame(resultado_carga['skus_atualizados'])
+                        st.dataframe(
+                            df_up_atu[['codigo', 'descricao', 'qtd_adicionada', 'estoque_anterior', 'novo_estoque']],
+                            column_config={
+                                "codigo": "Código / SKU",
+                                "descricao": "Produto",
+                                "qtd_adicionada": st.column_config.NumberColumn("Qtd Adicionada", format="+%d un"),
+                                "estoque_anterior": st.column_config.NumberColumn("Estoque Anterior", format="%d un"),
+                                "novo_estoque": st.column_config.NumberColumn("Novo Estoque", format="%d un")
+                            },
+                            use_container_width=True,
+                            hide_index=True
+                        )
+                        
+                    if resultado_carga['skus_novos']:
+                        st.markdown("##### ✨ Novos SKUs Inseridos no Catálogo:")
+                        df_up_novos = pd.DataFrame(resultado_carga['skus_novos'])
+                        st.dataframe(
+                            df_up_novos[['codigo', 'descricao', 'qtd_adicionada', 'vl_unit_pago', 'vl_unit_sugerido']],
+                            column_config={
+                                "codigo": "Código / SKU",
+                                "descricao": "Novo Produto",
+                                "qtd_adicionada": st.column_config.NumberColumn("Estoque Inicial", format="%d un"),
+                                "vl_unit_pago": st.column_config.NumberColumn("Custo NF", format="R$ %.2f"),
+                                "vl_unit_sugerido": st.column_config.NumberColumn("Valor Sugerido", format="R$ %.2f")
+                            },
+                            use_container_width=True,
+                            hide_index=True
+                        )
+                    
+                    st.info("💡 A página será atualizada para exibir os novos saldos de estoque.")
+                    st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao processar Nota Fiscal em PDF: {e}")
+
     if df_prod.empty:
         st.info("Nenhum produto cadastrado no momento.")
     else:

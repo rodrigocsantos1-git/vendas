@@ -568,3 +568,158 @@ def alterar_senha_usuario(email, nova_senha):
     conn.commit()
     conn.close()
     return True
+
+def processar_carga_nf_pdf(pdf_source):
+    """
+    Processa um PDF de Nota Fiscal de Compra para controle de estoque:
+    - O que for inserido NÃO remove o anterior.
+    - Se o SKU (código) já existir no estoque:
+      * Adiciona APENAS a nova quantidade ao estoque (quantidade_estoque += qtd_nova)
+      * Adiciona à quantidade comprada histórica (quantidade_comprada += qtd_nova)
+      * NÃO altera em nada os valores ou preços anteriores do item já existente.
+    - Se for um NOVO SKU (não existente no estoque):
+      * Inclui o novo SKU com seus valores de custo, revista e quantidade da Nota Fiscal.
+    """
+    import parse_nf
+    from datetime import datetime
+
+    metadata = parse_nf.extract_nf_metadata(pdf_source)
+    raw_items = parse_nf.parse_items(pdf_source)
+    if not raw_items:
+        raise ValueError("Nenhum item foi encontrado ou o PDF não possui o formato de Nota Fiscal esperado.")
+
+    grouped_items = parse_nf.group_items_by_sku(raw_items)
+
+    produtos_atuais = get_produtos()
+    prods_por_codigo = {}
+    for p in produtos_atuais:
+        cod = str(p['codigo']).strip()
+        if cod not in prods_por_codigo:
+            prods_por_codigo[cod] = []
+        prods_por_codigo[cod].append(p)
+
+    skus_atualizados = []
+    skus_novos = []
+    total_unidades_processadas = 0
+
+    sb = None
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+        except Exception as e:
+            print("Aviso ao conectar com Supabase:", e)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    for item in grouped_items:
+        cod = str(item['codigo']).strip()
+        qtd_nova = int(item['quantidade'])
+        total_unidades_processadas += qtd_nova
+
+        if cod in prods_por_codigo:
+            # SKU JÁ EXISTE NO ESTOQUE:
+            # Regra: NÃO altera em nada o anterior (preços, custos, margens permanecem intocados).
+            # Apenas incrementa a quantidade do estoque e o histórico de compras.
+            alvo = prods_por_codigo[cod][0]
+            novo_estoque = int(alvo['quantidade_estoque']) + qtd_nova
+            nova_comprada = int(alvo['quantidade_comprada']) + qtd_nova
+
+            if sb:
+                try:
+                    sb.table("produtos").update({
+                        "quantidade_estoque": novo_estoque,
+                        "quantidade_comprada": nova_comprada
+                    }).eq("id", alvo['id']).execute()
+                except Exception as e:
+                    print(f"Erro ao atualizar estoque do SKU {cod} no Supabase:", e)
+
+            cursor.execute("""
+                UPDATE produtos SET
+                    quantidade_estoque = ?,
+                    quantidade_comprada = ?
+                WHERE id = ?
+            """, (novo_estoque, nova_comprada, alvo['id']))
+
+            skus_atualizados.append({
+                "codigo": cod,
+                "descricao": alvo['descricao'],
+                "qtd_adicionada": qtd_nova,
+                "estoque_anterior": alvo['quantidade_estoque'],
+                "novo_estoque": novo_estoque,
+                "tipo": "atualizado"
+            })
+        else:
+            # NOVO SKU:
+            # Cadastra o novo produto mantendo os valores da nota fiscal
+            cat = categorize_product(item['descricao'])
+            vl_unit_sugerido = float(item['vl_unit_sugerido'])
+            vl_unit_pago = float(item['vl_unit_pago'])
+            desconto_compra = float(item.get('desconto_compra_unit', 0.0))
+            preco_venda = vl_unit_sugerido
+
+            novo_prod_data = {
+                "codigo": cod,
+                "descricao": item['descricao'],
+                "categoria": cat,
+                "unidade": item.get('unidade', 'UN'),
+                "quantidade_comprada": qtd_nova,
+                "quantidade_estoque": qtd_nova,
+                "quantidade_vendida": 0,
+                "vl_unit_sugerido": vl_unit_sugerido,
+                "desconto_compra_unit": desconto_compra,
+                "vl_unit_pago": vl_unit_pago,
+                "desconto_repassado_unit": 0.0,
+                "vl_unit_venda_sugerida_final": preco_venda,
+                "preco_revista": vl_unit_sugerido,
+                "preco_revista_promo": None,
+                "pagina_revista": None,
+                "nome_revista": item['descricao'],
+                "origem": metadata.get('origem', f"Nota Fiscal {datetime.now().strftime('%d/%m/%Y')}"),
+                "observacoes": "Carga via PDF de Nota Fiscal"
+            }
+
+            if sb:
+                try:
+                    sb.table("produtos").insert(novo_prod_data).execute()
+                except Exception as e:
+                    print(f"Erro ao inserir novo SKU {cod} no Supabase:", e)
+
+            cursor.execute("""
+                INSERT INTO produtos (
+                    codigo, descricao, categoria, unidade,
+                    quantidade_comprada, quantidade_estoque, quantidade_vendida,
+                    vl_unit_sugerido, desconto_compra_unit, vl_unit_pago,
+                    desconto_repassado_unit, vl_unit_venda_sugerida_final,
+                    preco_revista, preco_revista_promo, pagina_revista,
+                    nome_revista, origem, observacoes
+                ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 0.0, ?, ?, NULL, NULL, ?, ?, ?)
+            """, (
+                cod, item['descricao'], cat, item.get('unidade', 'UN'),
+                qtd_nova, qtd_nova, vl_unit_sugerido, desconto_compra,
+                vl_unit_pago, preco_venda, vl_unit_sugerido, item['descricao'],
+                novo_prod_data['origem'], novo_prod_data['observacoes']
+            ))
+
+            skus_novos.append({
+                "codigo": cod,
+                "descricao": item['descricao'],
+                "qtd_adicionada": qtd_nova,
+                "vl_unit_pago": vl_unit_pago,
+                "vl_unit_sugerido": vl_unit_sugerido,
+                "tipo": "novo"
+            })
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "sucesso": True,
+        "metadata": metadata,
+        "total_linhas_pdf": len(raw_items),
+        "total_skus_pdf": len(grouped_items),
+        "total_unidades": total_unidades_processadas,
+        "skus_atualizados": skus_atualizados,
+        "skus_novos": skus_novos
+    }
+

@@ -49,6 +49,14 @@
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
+  <!-- PDF.js para Leitura de Notas Fiscais em PDF no Navegador -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -348,6 +356,30 @@
 
       <!-- ================= TAB: ESTOQUE & PRODUTOS ================= -->
       <div id="tab-produtos" class="tab-content hidden space-y-4">
+        <!-- Card de Upload de Nota Fiscal (PDF) para Controle de Estoque -->
+        <div class="bg-gradient-to-r from-orange-50 via-amber-50 to-orange-100/50 rounded-2xl border border-orange-200 p-4 sm:p-5 shadow-sm">
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-orange-600 text-white flex items-center justify-center text-sm shadow-md shadow-orange-600/30">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                </span>
+                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Subir Estoque com Nota Fiscal (PDF)</h3>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed max-w-2xl">
+                Envie o PDF da Nota Fiscal de compra com valores. Os dados anteriores <b>não são removidos</b>. Para SKUs já existentes, adiciona <b>apenas a quantidade nova</b> sem alterar nada do anterior; novos SKUs são inseridos automaticamente.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 w-full md:w-auto">
+              <input type="file" id="inputNotaFiscalPDF" accept="application/pdf" onchange="processarUploadNotaFiscal(this)" class="hidden">
+              <button onclick="document.getElementById('inputNotaFiscalPDF').click()" id="btnSubirNotaPDF" class="w-full md:w-auto px-4 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md shadow-orange-600/25 transition flex items-center justify-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                <span>Subir Nota Fiscal (PDF)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="bg-white rounded-2xl border border-orange-100 p-4 sm:p-5 shadow-sm">
           <!-- Filter bar -->
           <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-4">
@@ -2341,6 +2373,329 @@
         Swal.fire('Erro', 'Falha ao cadastrar produto: ' + err.message, 'error');
       }
     }
+
+    // ================= PARSER E PROCESSAMENTO DE NOTA FISCAL (PDF) =================
+    function categorizarDescricaoProduto(desc) {
+      const u = (desc || '').toUpperCase();
+      if (u.includes('SAB') || u.includes('SABONETE')) {
+        if (u.includes('MMBB')) return 'Mamãe e Bebê';
+        if (u.includes('LIQ')) return 'Sabonete Líquido';
+        return 'Sabonetes';
+      }
+      if (u.includes('PARFUM') || u.includes('COLONIA') || u.includes('DES COL') || u.includes('PARFU')) {
+        if (u.includes('NATURE')) return 'Infantil';
+        if (u.includes('MASC') || u.includes('KAIAK') || u.includes('KMAX')) return 'Perfumaria Masculina';
+        if (u.includes('FEM') || u.includes('LUNA')) return 'Perfumaria Feminina';
+        return 'Perfumaria';
+      }
+      if (u.includes('MAOS')) return 'Cuidados para Mãos';
+      if (u.includes('OLEO')) return 'Óleos Corporais';
+      if (u.includes('COND') || u.includes('SHAMP') || u.includes('LUMINA')) return 'Cabelos';
+      if (u.includes('ROLLON') || u.includes('SPRAY')) return 'Desodorantes';
+      if (u.includes('HID') || u.includes('HIDRA')) {
+        if (u.includes('MMBB')) return 'Mamãe e Bebê';
+        return 'Hidratantes Corporais';
+      }
+      if (u.includes('MMBB')) return 'Mamãe e Bebê';
+      return 'Outros';
+    }
+
+    async function extrairTextoCompletoPDF(file) {
+      if (!window.pdfjsLib) {
+        throw new Error("A biblioteca de leitura de PDF (PDF.js) não pôde ser carregada. Verifique sua conexão à internet.");
+      }
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(it => it.str).join('\n');
+        fullText += pageText + '\n';
+      }
+      return fullText;
+    }
+
+    function parseLinhasNotaFiscal(fullText) {
+      const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
+      const items = [];
+      let i = 0;
+
+      while (i < lines.length) {
+        const line = lines[i];
+        if (line.includes('Qtde') || line.includes('total de itens')) {
+          break;
+        }
+
+        const match = line.match(/^(\d{3,7})\s+(.+?)\s+(\d+)\s+([\d\.,]+)\s+([\d\.,]+)$/);
+        if (match) {
+          const code = match[1];
+          const descInicial = match[2];
+          const qtd = parseInt(match[3]) || 1;
+          const vlUnit = parseFloat(match[4].replace(',', '.')) || 0;
+          const vlTot = parseFloat(match[5].replace('.', '').replace(',', '.')) || 0;
+
+          const extraDesc = [];
+          let descVal = 0.0;
+          let j = i + 1;
+
+          while (j < lines.length) {
+            const sub = lines[j];
+            if (sub.match(/^(\d{3,7})\s+/) || sub.includes('Qtde')) {
+              break;
+            }
+            if (sub.includes('Desconto')) {
+              const dm = sub.match(/Desconto\s*(-?[\d\.,]+)/);
+              if (dm) {
+                descVal = -Math.abs(parseFloat(dm[1].replace('.', '').replace(',', '.')) || 0);
+              }
+              j++;
+              break;
+            } else {
+              extraDesc.push(sub);
+            }
+            j++;
+          }
+          i = j;
+
+          let descFinal = (descInicial + ' ' + extraDesc.join(' ')).trim();
+          descFinal = descFinal.replace(/\s+(PC|UNI|UN|CX|KIT)\s*$/i, '').replace(/\s+\d+\s*$/, '').trim();
+
+          const vlPagoUnit = qtd > 0 ? parseFloat(((vlTot + descVal) / qtd).toFixed(2)) : 0;
+          const descUnit = qtd > 0 ? parseFloat((Math.abs(descVal) / qtd).toFixed(2)) : 0;
+
+          items.push({
+            codigo: code,
+            descricao: descFinal,
+            quantidade: qtd,
+            vl_unit_sugerido: vlUnit,
+            vl_total_sugerido: vlTot,
+            desconto_total: descVal,
+            desconto_compra_unit: descUnit,
+            vl_unit_pago: vlPagoUnit
+          });
+        } else {
+          i++;
+        }
+      }
+
+      // Agrupa itens do mesmo SKU dentro da mesma nota somando a quantidade
+      const agrupados = {};
+      for (const it of items) {
+        const cod = it.codigo;
+        if (!agrupados[cod]) {
+          agrupados[cod] = Object.assign({}, it);
+        } else {
+          agrupados[cod].quantidade += it.quantidade;
+          agrupados[cod].vl_total_sugerido = parseFloat((agrupados[cod].vl_total_sugerido + it.vl_total_sugerido).toFixed(2));
+          agrupados[cod].desconto_total = parseFloat((agrupados[cod].desconto_total + it.desconto_total).toFixed(2));
+        }
+      }
+
+      return {
+        itensRaw: items,
+        itensAgrupados: Object.values(agrupados)
+      };
+    }
+
+    async function processarUploadNotaFiscal(inputElement) {
+      const file = inputElement.files && inputElement.files[0];
+      if (!file) return;
+
+      const btn = document.getElementById('btnSubirNotaPDF');
+      const htmlOriginalBtn = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Lendo Nota Fiscal...`;
+
+      try {
+        Swal.fire({
+          title: 'Lendo Nota Fiscal...',
+          html: 'Extraindo itens, custos e quantidades do arquivo PDF...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        const fullText = await extrairTextoCompletoPDF(file);
+        const { itensRaw, itensAgrupados } = parseLinhasNotaFiscal(fullText);
+
+        if (!itensAgrupados || itensAgrupados.length === 0) {
+          throw new Error("Nenhum item de produto foi encontrado no PDF. Certifique-se de que é uma Nota Fiscal de compra da Natura.");
+        }
+
+        // Extrai data e número da nota
+        let dataNF = hojeISO();
+        let dataNFBr = formataDataBR(hojeISO());
+        let numeroNF = '';
+
+        const mNfce = fullText.match(/NFC-e\s*n[º°o]?\s*(\d+).*?(\d{2}\/\d{2}\/\d{4})/i);
+        if (mNfce) {
+          numeroNF = String(parseInt(mNfce[1]));
+          dataNFBr = mNfce[2];
+          const dp = dataNFBr.split('/');
+          if (dp.length === 3) dataNF = `${dp[2]}-${dp[1]}-${dp[0]}`;
+        }
+
+        const origemNF = `Nota Fiscal ${dataNFBr}` + (numeroNF ? ` (Nº ${numeroNF})` : '');
+
+        // Recarrega lista mais recente de produtos para conferência rigorosa
+        const resAtual = await sbClient.from('produtos').select('*');
+        if (resAtual.error) throw resAtual.error;
+        const produtosAtuais = resAtual.data || [];
+
+        const mapaExistentes = {};
+        for (const p of produtosAtuais) {
+          const cod = String(p.codigo).trim();
+          if (!mapaExistentes[cod]) mapaExistentes[cod] = [];
+          mapaExistentes[cod].push(p);
+        }
+
+        const skusAtualizados = [];
+        const skusNovos = [];
+        let totalUnidadesNovas = 0;
+
+        for (const item of itensAgrupados) {
+          const cod = String(item.codigo).trim();
+          const qtdNova = item.quantidade;
+          totalUnidadesNovas += qtdNova;
+
+          if (mapaExistentes[cod]) {
+            // SKU JÁ EXISTE NO ESTOQUE:
+            // Regra: NÃO altera em nada o anterior (preços, custos, margens permanecem intocados).
+            // Apenas incrementa a quantidade do estoque e o histórico de compras.
+            const alvo = mapaExistentes[cod][0];
+            const novoEstoque = (alvo.quantidade_estoque || 0) + qtdNova;
+            const novaComprada = (alvo.quantidade_comprada || 0) + qtdNova;
+
+            const resUp = await sbClient.from('produtos').update({
+              quantidade_estoque: novoEstoque,
+              quantidade_comprada: novaComprada
+            }).eq('id', alvo.id);
+
+            if (resUp.error) throw resUp.error;
+
+            skusAtualizados.push({
+              codigo: cod,
+              descricao: alvo.descricao,
+              qtd_adicionada: qtdNova,
+              estoque_anterior: alvo.quantidade_estoque || 0,
+              novo_estoque: novoEstoque
+            });
+          } else {
+            // NOVO SKU:
+            // Cadastra o novo produto mantendo os valores de custo e revista da nota fiscal
+            const cat = categorizarDescricaoProduto(item.descricao);
+            const vlUnitSugerido = item.vl_unit_sugerido;
+            const vlUnitPago = item.vl_unit_pago;
+            const descontoCompra = item.desconto_compra_unit;
+
+            const novoProdutoData = {
+              codigo: cod,
+              descricao: item.descricao,
+              categoria: cat,
+              unidade: 'UN',
+              quantidade_comprada: qtdNova,
+              quantidade_estoque: qtdNova,
+              quantidade_vendida: 0,
+              vl_unit_sugerido: vlUnitSugerido,
+              desconto_compra_unit: descontoCompra,
+              vl_unit_pago: vlUnitPago,
+              desconto_repassado_unit: 0.0,
+              vl_unit_venda_sugerida_final: vlUnitSugerido,
+              preco_revista: vlUnitSugerido,
+              preco_revista_promo: null,
+              pagina_revista: null,
+              nome_revista: item.descricao,
+              origem: origemNF,
+              observacoes: 'Carga via PDF de Nota Fiscal'
+            };
+
+            const resIns = await sbClient.from('produtos').insert(novoProdutoData);
+            if (resIns.error) throw resIns.error;
+
+            skusNovos.push({
+              codigo: cod,
+              descricao: item.descricao,
+              qtd_adicionada: qtdNova,
+              vl_unit_pago: vlUnitPago,
+              vl_unit_sugerido: vlUnitSugerido
+            });
+          }
+        }
+
+        await carregarTudo();
+
+        let htmlDetalhes = `
+          <div class="text-left text-xs space-y-3 max-h-72 overflow-y-auto pr-1">
+            <div class="p-2.5 rounded-xl bg-orange-50 border border-orange-200">
+              <p class="font-extrabold text-orange-900">📄 ${origemNF}</p>
+              <p class="text-[11px] text-orange-800 mt-0.5">
+                Total de <b>+${totalUnidadesNovas} unidades</b> processadas (${itensAgrupados.length} SKUs na nota).
+              </p>
+            </div>
+        `;
+
+        if (skusAtualizados.length > 0) {
+          htmlDetalhes += `
+            <div>
+              <p class="font-bold text-emerald-700 text-xs uppercase mb-1">
+                🟢 SKUs Existentes (${skusAtualizados.length}) — Apenas estoque incrementado:
+              </p>
+              <div class="space-y-1">
+                ${skusAtualizados.map(s => `
+                  <div class="flex justify-between items-center p-1.5 rounded-lg bg-emerald-50/70 border border-emerald-200 text-[11px]">
+                    <span class="font-bold text-slate-800 truncate mr-2">#${s.codigo} ${s.descricao}</span>
+                    <span class="font-black text-emerald-800 whitespace-nowrap">+${s.qtd_adicionada} un (Era ${s.estoque_anterior} ➔ Agora ${s.novo_estoque})</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        if (skusNovos.length > 0) {
+          htmlDetalhes += `
+            <div>
+              <p class="font-bold text-blue-700 text-xs uppercase mb-1">
+                ✨ Novos SKUs Inseridos (${skusNovos.length}):
+              </p>
+              <div class="space-y-1">
+                ${skusNovos.map(s => `
+                  <div class="flex justify-between items-center p-1.5 rounded-lg bg-blue-50/70 border border-blue-200 text-[11px]">
+                    <span class="font-bold text-slate-800 truncate mr-2">#${s.codigo} ${s.descricao}</span>
+                    <span class="font-black text-blue-800 whitespace-nowrap">${s.qtd_adicionada} un • Custo: ${formataBRL(s.vl_unit_pago)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        htmlDetalhes += `</div>`;
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Estoque Atualizado com Sucesso!',
+          html: htmlDetalhes,
+          confirmButtonColor: '#ea580c',
+          confirmButtonText: 'Entendido'
+        });
+
+      } catch (err) {
+        console.error("Erro ao subir Nota Fiscal em PDF:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Falha no Processamento da Nota Fiscal',
+          text: err.message
+        });
+      } finally {
+        inputElement.value = '';
+        btn.disabled = false;
+        btn.innerHTML = htmlOriginalBtn;
+      }
+    }
+
   </script>
 </body>
 </html>
