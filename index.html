@@ -413,7 +413,6 @@
                   <th class="py-3 px-3">Descrição do Produto</th>
                   <th class="py-3 px-3">Categoria</th>
                   <th class="py-3 px-2 text-center">Data Compra</th>
-                  <th class="py-3 px-2 text-center">Pág. Revista</th>
                   <th class="py-3 px-3 text-right">Preço Revista</th>
                   <th class="py-3 px-3 text-right">Preço Promo</th>
                   <th class="py-3 px-3 text-right">Custo Pago</th>
@@ -424,7 +423,7 @@
               </thead>
               <tbody id="tabelaProdutosCorpo" class="divide-y divide-slate-100">
                 <tr>
-                  <td colspan="11" class="py-8 text-center text-slate-600">Carregando produtos do Supabase...</td>
+                  <td colspan="10" class="py-8 text-center text-slate-600">Carregando produtos do Supabase...</td>
                 </tr>
               </tbody>
             </table>
@@ -1550,7 +1549,7 @@
     function renderizarTabelaProdutos(produtos) {
       const tbody = document.getElementById('tabelaProdutosCorpo');
       if (!produtos || produtos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-600">Nenhum produto encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-600">Nenhum produto encontrado.</td></tr>`;
         return;
       }
 
@@ -1560,7 +1559,6 @@
         const precoPromo = p.preco_revista_promo ? `<span class="text-emerald-600 font-bold">${formataBRL(p.preco_revista_promo)}</span>` : '-';
         const custo = formataBRL(p.vl_unit_pago);
         const sugerido = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
-        const pagina = p.pagina_revista ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">Pág. ${p.pagina_revista}</span>` : '-';
         const dataCompra = formataDataBR(p.data_cadastro);
 
         return `
@@ -1569,7 +1567,6 @@
             <td class="py-2.5 px-3 font-semibold text-slate-800">${p.descricao}</td>
             <td class="py-2.5 px-3 text-slate-600"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-medium">${p.categoria || 'Geral'}</span></td>
             <td class="py-2.5 px-2 text-center font-mono text-[11px] font-semibold text-slate-700">${dataCompra}</td>
-            <td class="py-2.5 px-2 text-center">${pagina}</td>
             <td class="py-2.5 px-3 text-right font-medium text-slate-600">${precoRevista}</td>
             <td class="py-2.5 px-3 text-right">${precoPromo}</td>
             <td class="py-2.5 px-3 text-right text-slate-600">${custo}</td>

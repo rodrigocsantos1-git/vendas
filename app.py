@@ -588,7 +588,7 @@ with tab_estoque:
         df_filtered['margem_estimada_perc'] = (df_filtered['lucro_unit_estimado'] / df_filtered['vl_unit_pago'] * 100).round(1)
 
         cols_display = [
-            'id', 'codigo', 'descricao', 'pagina_revista',
+            'id', 'codigo', 'descricao',
             'quantidade_estoque',
             'vl_unit_pago', 'preco_revista', 'preco_revista_promo',
             'desconto_compra_unit',
@@ -600,7 +600,6 @@ with tab_estoque:
             "id": st.column_config.NumberColumn("ID", disabled=True, width="small"),
             "codigo": st.column_config.TextColumn("Código", disabled=True, width="small"),
             "descricao": st.column_config.TextColumn("Produto (Editável ✏️)", disabled=False, width="large"),
-            "pagina_revista": st.column_config.NumberColumn("Pág. Revista", disabled=True, format="Pág. %d", help="Página correspondente no Catalogo.pdf"),
             "quantidade_estoque": st.column_config.NumberColumn("Em Estoque (Editável ✏️)", disabled=False, min_value=0, step=1, format="%d un"),
             "vl_unit_pago": st.column_config.NumberColumn("Quanto Paguei (Editável ✏️)", disabled=False, min_value=0.0, step=1.0, format="R$ %.2f", help="Custo líquido unitário na Nota Fiscal"),
             "preco_revista": st.column_config.NumberColumn("Valor Revista (Editável ✏️)", disabled=False, min_value=0.0, step=1.0, format="R$ %.2f", help="Preço regular de catálogo da Revista"),
