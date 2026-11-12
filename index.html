@@ -2743,25 +2743,101 @@
           throw new Error("Nenhum item de produto foi encontrado no PDF. Certifique-se de que é uma Nota Fiscal de compra da Natura.");
         }
 
-        // Extrai data e número da nota
+        // Extrai metadados completos da nota fiscal para identificação única
         let dataNF = hojeISO();
         let dataNFBr = formataDataBR(hojeISO());
         let numeroNF = '';
+        let serieNF = '';
+        let protocoloNF = '';
+        let chaveAcesso = '';
 
-        const mNfce = fullText.match(/NFC-e\s*n[º°o]?\s*(\d+).*?(\d{2}\/\d{2}\/\d{4})/i);
-        if (mNfce) {
-          numeroNF = String(parseInt(mNfce[1]));
-          dataNFBr = mNfce[2];
-          const dp = dataNFBr.split('/');
-          if (dp.length === 3) dataNF = `${dp[2]}-${dp[1]}-${dp[0]}`;
+        // 1. Chave de acesso de 44 dígitos
+        const mChave = fullText.match(/(\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4})/);
+        if (mChave) {
+          chaveAcesso = mChave[1].replace(/\s+/g, '');
         }
 
+        // 2. NFC-e nº, Série e Data
+        const mNfce = fullText.match(/NFC-e\s*n[º°o]?\s*(\d+).*?S[ée]rie\s*(\d+).*?(\d{2}\/\d{2}\/\d{4})/i);
+        if (mNfce) {
+          numeroNF = String(parseInt(mNfce[1]));
+          serieNF = String(mNfce[2]);
+          dataNFBr = mNfce[3];
+          const dp = dataNFBr.split('/');
+          if (dp.length === 3) dataNF = `${dp[2]}-${dp[1]}-${dp[0]}`;
+        } else {
+          const mSimples = fullText.match(/NFC-e\s*n[º°o]?\s*(\d+)/i);
+          if (mSimples) numeroNF = String(parseInt(mSimples[1]));
+
+          const mData = fullText.match(/(\d{2}\/\d{2}\/\d{4})\s+\d{2}:\d{2}:\d{2}/) || fullText.match(/Data\s+de\s+autoriza[çc][ãa]o:\s*(\d{2}\/\d{2}\/\d{4})/i);
+          if (mData) {
+            dataNFBr = mData[1];
+            const dp = dataNFBr.split('/');
+            if (dp.length === 3) dataNF = `${dp[2]}-${dp[1]}-${dp[0]}`;
+          }
+        }
+
+        // 3. Protocolo
+        const mProt = fullText.match(/Protocolo\s+de\s+autoriza[çc][ãa]o:\s*(\d+)/i);
+        if (mProt) protocoloNF = mProt[1];
+
+        const idUnicoNF = chaveAcesso || protocoloNF || (numeroNF ? `NF_${numeroNF}_SERIE_${serieNF}_${dataNF}` : '');
         const origemNF = `Nota Fiscal ${dataNFBr}` + (numeroNF ? ` (Nº ${numeroNF})` : '');
+        const tagNF = idUnicoNF ? `[NF: ${idUnicoNF}]` : '';
 
         // Recarrega lista mais recente de produtos para conferência rigorosa
         const resAtual = await sbClient.from('produtos').select('*');
         if (resAtual.error) throw resAtual.error;
         const produtosAtuais = resAtual.data || [];
+
+        // ========================================================
+        // VALIDAÇÃO RIGOROSA: IMPEDIR QUE A MESMA NF SUBA NOVAMENTE
+        // ========================================================
+        let nfJaExiste = false;
+        let motivoDuplicidade = '';
+
+        // A) Checa histórico local de importações bem-sucedidas
+        const logsImportacaoSalvos = JSON.parse(localStorage.getItem('vendas_barreto_logs_importacao') || '[]');
+        const logExistente = logsImportacaoSalvos.find(l => {
+          if (!l.sucesso) return false;
+          if (idUnicoNF && l.idUnicoNF && l.idUnicoNF === idUnicoNF) return true;
+          if (chaveAcesso && l.chaveAcesso && l.chaveAcesso === chaveAcesso) return true;
+          if (numeroNF && l.numeroNF && l.numeroNF === numeroNF && l.dataNFBr === dataNFBr) return true;
+          return false;
+        });
+
+        if (logExistente) {
+          nfJaExiste = true;
+          motivoDuplicidade = `A Nota Fiscal ${origemNF} já foi importada anteriormente em ${logExistente.dataHora || 'sessão anterior'}.`;
+        }
+
+        // B) Checa na base do Supabase (nos campos de observações e origem dos produtos)
+        if (!nfJaExiste) {
+          for (const p of produtosAtuais) {
+            const obsP = p.observacoes || '';
+            const origP = p.origem || '';
+
+            if (chaveAcesso && (obsP.includes(chaveAcesso) || origP.includes(chaveAcesso))) {
+              nfJaExiste = true;
+              motivoDuplicidade = `A Nota Fiscal com chave '${chaveAcesso}' já consta registrada no estoque.`;
+              break;
+            }
+            if (idUnicoNF && (obsP.includes(idUnicoNF) || origP.includes(idUnicoNF))) {
+              nfJaExiste = true;
+              motivoDuplicidade = `A Nota Fiscal [${idUnicoNF}] já consta registrada no estoque.`;
+              break;
+            }
+            if (numeroNF && dataNFBr && origP.includes(numeroNF) && origP.includes(dataNFBr)) {
+              nfJaExiste = true;
+              motivoDuplicidade = `A Nota Fiscal nº ${numeroNF} emitida em ${dataNFBr} já consta cadastrada nos produtos.`;
+              break;
+            }
+          }
+        }
+
+        if (nfJaExiste) {
+          throw new Error(`⚠️ NOTA FISCAL DUPLICADA: ${motivoDuplicidade}\n\nPara evitar lançamentos repetidos no estoque, esta importação foi cancelada.`);
+        }
 
         const mapaExistentes = {};
         for (const p of produtosAtuais) {
@@ -2787,9 +2863,13 @@
             const novoEstoque = (alvo.quantidade_estoque || 0) + qtdNova;
             const novaComprada = (alvo.quantidade_comprada || 0) + qtdNova;
 
+            const obsAnt = alvo.observacoes || '';
+            const novaObs = tagNF && !obsAnt.includes(tagNF) ? `${obsAnt} ${tagNF}`.trim() : obsAnt;
+
             const resUp = await sbClient.from('produtos').update({
               quantidade_estoque: novoEstoque,
-              quantidade_comprada: novaComprada
+              quantidade_comprada: novaComprada,
+              observacoes: novaObs
             }).eq('id', alvo.id);
 
             if (resUp.error) throw resUp.error;
@@ -2827,7 +2907,7 @@
               pagina_revista: null,
               nome_revista: item.descricao,
               origem: origemNF,
-              observacoes: 'Carga via PDF de Nota Fiscal'
+              observacoes: `Carga via PDF ${tagNF}`.trim()
             };
 
             const resIns = await sbClient.from('produtos').insert(novoProdutoData);
@@ -2897,6 +2977,10 @@
         salvarLogImportacao({
           arquivo: file.name,
           origem: origemNF,
+          idUnicoNF: idUnicoNF,
+          chaveAcesso: chaveAcesso,
+          numeroNF: numeroNF,
+          dataNFBr: dataNFBr,
           dataHora: new Date().toLocaleString('pt-BR'),
           totalUnidades: totalUnidadesNovas,
           totalSkus: itensAgrupados.length,

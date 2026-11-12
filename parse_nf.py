@@ -10,26 +10,44 @@ def _open_pdf(pdf_source):
     return pdfplumber.open(pdf_source)
 
 def extract_nf_metadata(pdf_source="Nota_fiscal_05_11_2026.pdf"):
-    """Extrai data de emissão e número da NFC-e / Nota Fiscal a partir do PDF."""
+    """Extrai metadados completos da Nota Fiscal para validação e desduplicação."""
     data_nf_iso = date.today().isoformat()
     data_nf_br = date.today().strftime("%d/%m/%Y")
     numero_nf = ""
+    serie_nf = ""
+    protocolo_nf = ""
+    chave_acesso = ""
 
     try:
         with _open_pdf(pdf_source) as pdf:
             full_text = "\n".join((p.extract_text() or "") for p in pdf.pages)
 
-        # Procurar padrão NFC-e nº 000044852 Série 3 05/11/2026
-        m_nfce = re.search(r'NFC-e\s*n[º°o]?\s*(\d+).*?(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE | re.DOTALL)
+        # 1. Chave de Acesso (44 dígitos)
+        m_chave = re.search(r'(\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4}\s+\d{4})', full_text)
+        if m_chave:
+            chave_acesso = re.sub(r'\s+', '', m_chave.group(1))
+
+        # 2. Número da NFC-e e Série
+        m_nfce = re.search(r'NFC-e\s*n[º°o]?\s*(\d+).*?S[ée]rie\s*(\d+).*?(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE | re.DOTALL)
         if m_nfce:
             numero_nf = str(int(m_nfce.group(1)))
-            data_nf_br = m_nfce.group(2)
+            serie_nf = str(m_nfce.group(2))
+            data_nf_br = m_nfce.group(3)
         else:
+            m_nf_simples = re.search(r'NFC-e\s*n[º°o]?\s*(\d+)', full_text, re.IGNORECASE)
+            if m_nf_simples:
+                numero_nf = str(int(m_nf_simples.group(1)))
+
             m_data = re.search(r'(\d{2}/\d{2}/\d{4})\s+\d{2}:\d{2}:\d{2}', full_text)
             if not m_data:
                 m_data = re.search(r'Data\s+de\s+autoriza[çc][ãa]o:\s*(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
             if m_data:
                 data_nf_br = m_data.group(1)
+
+        # 3. Protocolo de autorização
+        m_prot = re.search(r'Protocolo\s+de\s+autoriza[çc][ãa]o:\s*(\d+)', full_text, re.IGNORECASE)
+        if m_prot:
+            protocolo_nf = str(m_prot.group(1))
 
         parts = data_nf_br.split("/")
         if len(parts) == 3:
@@ -37,11 +55,18 @@ def extract_nf_metadata(pdf_source="Nota_fiscal_05_11_2026.pdf"):
     except Exception as e:
         print("Aviso ao extrair metadados da NF:", e)
 
+    # Identificador único da Nota Fiscal
+    identificador_unico = chave_acesso or protocolo_nf or (f"NF_{numero_nf}_SERIE_{serie_nf}_{data_nf_iso}" if numero_nf else "")
     origem_label = f"Nota Fiscal {data_nf_br}" + (f" (Nº {numero_nf})" if numero_nf else "")
+
     return {
         "data_nf_iso": data_nf_iso,
         "data_nf_br": data_nf_br,
         "numero_nf": numero_nf,
+        "serie_nf": serie_nf,
+        "protocolo_nf": protocolo_nf,
+        "chave_acesso": chave_acesso,
+        "identificador_unico": identificador_unico,
         "origem": origem_label
     }
 

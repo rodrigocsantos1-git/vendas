@@ -569,9 +569,85 @@ def alterar_senha_usuario(email, nova_senha):
     conn.close()
     return True
 
+def verificar_nf_ja_importada(metadata):
+    """
+    Verifica se uma Nota Fiscal já foi importada anteriormente:
+    Checa pela chave de acesso (44 dígitos), protocolo ou número de NFC-e + data.
+    """
+    chave = metadata.get('chave_acesso')
+    identificador = metadata.get('identificador_unico')
+    numero_nf = metadata.get('numero_nf')
+    data_br = metadata.get('data_nf_br')
+
+    # 1. Checa tabela local de notas fiscais
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS notas_fiscais (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        identificador_unico TEXT UNIQUE NOT NULL,
+        chave_acesso TEXT,
+        numero_nf TEXT,
+        serie TEXT,
+        protocolo TEXT,
+        data_emissao TEXT,
+        valor_total REAL,
+        total_itens INTEGER,
+        total_unidades INTEGER,
+        data_importacao TEXT DEFAULT CURRENT_TIMESTAMP,
+        origem TEXT
+    )
+    """)
+    conn.commit()
+
+    if chave:
+        cursor.execute("SELECT * FROM notas_fiscais WHERE chave_acesso = ?", (chave,))
+        if cursor.fetchone():
+            conn.close()
+            return True, f"A Nota Fiscal com chave de acesso '{chave}' já foi importada anteriormente."
+
+    if identificador:
+        cursor.execute("SELECT * FROM notas_fiscais WHERE identificador_unico = ?", (identificador,))
+        if cursor.fetchone():
+            conn.close()
+            return True, f"A Nota Fiscal '{identificador}' já foi importada anteriormente."
+
+    # 2. Checa se já existe registro nos produtos com essa chave de acesso ou número
+    if chave:
+        cursor.execute("SELECT COUNT(*) as c FROM produtos WHERE observacoes LIKE ? OR origem LIKE ?", (f"%{chave}%", f"%{chave}%"))
+        if cursor.fetchone()['c'] > 0:
+            conn.close()
+            return True, f"A Nota Fiscal com chave '{chave}' já consta registrada no estoque."
+
+    if numero_nf and data_br:
+        cursor.execute("SELECT COUNT(*) as c FROM produtos WHERE origem LIKE ? AND origem LIKE ?", (f"%{data_br}%", f"%{numero_nf}%"))
+        if cursor.fetchone()['c'] > 0:
+            conn.close()
+            return True, f"A Nota Fiscal nº {numero_nf} de {data_br} já consta registrada no estoque."
+
+    conn.close()
+
+    # 3. Checa também no Supabase (se online)
+    if supabase_client.is_supabase_configured():
+        try:
+            sb = supabase_client.get_client()
+            if chave:
+                res_sb = sb.table("produtos").select("id").or_(f"observacoes.ilike.%{chave}%,origem.ilike.%{chave}%").limit(1).execute()
+                if res_sb.data and len(res_sb.data) > 0:
+                    return True, f"A Nota Fiscal com chave '{chave}' já foi importada anteriormente no Supabase."
+            if numero_nf and data_br:
+                res_sb2 = sb.table("produtos").select("id").ilike("origem", f"%{data_br}%").ilike("origem", f"%{numero_nf}%").limit(1).execute()
+                if res_sb2.data and len(res_sb2.data) > 0:
+                    return True, f"A Nota Fiscal nº {numero_nf} de {data_br} já consta registrada no Supabase."
+        except Exception as e:
+            pass
+
+    return False, ""
+
 def processar_carga_nf_pdf(pdf_source):
     """
     Processa um PDF de Nota Fiscal de Compra para controle de estoque:
+    - Valida se a Nota Fiscal já foi importada (impede duplicação acidental).
     - O que for inserido NÃO remove o anterior.
     - Se o SKU (código) já existir no estoque:
       * Adiciona APENAS a nova quantidade ao estoque (quantidade_estoque += qtd_nova)
@@ -584,6 +660,12 @@ def processar_carga_nf_pdf(pdf_source):
     from datetime import datetime
 
     metadata = parse_nf.extract_nf_metadata(pdf_source)
+
+    # VALIDAÇÃO: Impede que a mesma Nota Fiscal seja subida mais de uma vez
+    ja_importada, msg_bloqueio = verificar_nf_ja_importada(metadata)
+    if ja_importada:
+        raise ValueError(f"⚠️ Operação cancelada: {msg_bloqueio}")
+
     raw_items = parse_nf.parse_items(pdf_source)
     if not raw_items:
         raise ValueError("Nenhum item foi encontrado ou o PDF não possui o formato de Nota Fiscal esperado.")
@@ -612,6 +694,8 @@ def processar_carga_nf_pdf(pdf_source):
     conn = get_connection()
     cursor = conn.cursor()
 
+    tag_nf = f"[NF: {metadata.get('identificador_unico', '')}]" if metadata.get('identificador_unico') else ""
+
     for item in grouped_items:
         cod = str(item['codigo']).strip()
         qtd_nova = int(item['quantidade'])
@@ -625,11 +709,15 @@ def processar_carga_nf_pdf(pdf_source):
             novo_estoque = int(alvo['quantidade_estoque']) + qtd_nova
             nova_comprada = int(alvo['quantidade_comprada']) + qtd_nova
 
+            obs_anterior = alvo.get('observacoes') or ""
+            nova_obs = f"{obs_anterior} {tag_nf}".strip() if tag_nf and tag_nf not in obs_anterior else obs_anterior
+
             if sb:
                 try:
                     sb.table("produtos").update({
                         "quantidade_estoque": novo_estoque,
-                        "quantidade_comprada": nova_comprada
+                        "quantidade_comprada": nova_comprada,
+                        "observacoes": nova_obs
                     }).eq("id", alvo['id']).execute()
                 except Exception as e:
                     print(f"Erro ao atualizar estoque do SKU {cod} no Supabase:", e)
@@ -637,9 +725,10 @@ def processar_carga_nf_pdf(pdf_source):
             cursor.execute("""
                 UPDATE produtos SET
                     quantidade_estoque = ?,
-                    quantidade_comprada = ?
+                    quantidade_comprada = ?,
+                    observacoes = ?
                 WHERE id = ?
-            """, (novo_estoque, nova_comprada, alvo['id']))
+            """, (novo_estoque, nova_comprada, nova_obs, alvo['id']))
 
             skus_atualizados.append({
                 "codigo": cod,
@@ -676,7 +765,7 @@ def processar_carga_nf_pdf(pdf_source):
                 "pagina_revista": None,
                 "nome_revista": item['descricao'],
                 "origem": metadata.get('origem', f"Nota Fiscal {datetime.now().strftime('%d/%m/%Y')}"),
-                "observacoes": "Carga via PDF de Nota Fiscal"
+                "observacoes": f"Carga via PDF {tag_nf}".strip()
             }
 
             if sb:
@@ -709,6 +798,28 @@ def processar_carga_nf_pdf(pdf_source):
                 "vl_unit_sugerido": vl_unit_sugerido,
                 "tipo": "novo"
             })
+
+    # Registra a Nota Fiscal na tabela de controle de notas fiscais importadas
+    try:
+        cursor.execute("""
+        INSERT OR REPLACE INTO notas_fiscais (
+            identificador_unico, chave_acesso, numero_nf, serie, protocolo,
+            data_emissao, valor_total, total_itens, total_unidades, origem
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            metadata.get('identificador_unico') or f"NF_{metadata.get('numero_nf')}",
+            metadata.get('chave_acesso') or "",
+            metadata.get('numero_nf') or "",
+            metadata.get('serie_nf') or "",
+            metadata.get('protocolo_nf') or "",
+            metadata.get('data_nf_br') or "",
+            sum(it['vl_total_pago'] for it in grouped_items),
+            len(grouped_items),
+            total_unidades_processadas,
+            metadata.get('origem') or ""
+        ))
+    except Exception as e:
+        print("Aviso ao registrar NF em notas_fiscais:", e)
 
     conn.commit()
     conn.close()
