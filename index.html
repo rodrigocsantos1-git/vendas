@@ -256,6 +256,14 @@
             <span>Novo Produto</span>
           </div>
         </button>
+
+        <button onclick="mudarAba('backup'); alternarSidebarMobile(false);" id="tabBtn-backup" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-emerald-600 hover:bg-emerald-50">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-shield-halved w-4 text-center text-emerald-600"></i>
+            <span>Backup do Banco</span>
+          </div>
+          <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black uppercase">Seguro</span>
+        </button>
       </nav>
 
       <!-- Rodapé da Barra Lateral: Perfil do Usuário + Sincronização + Sair -->
@@ -1032,6 +1040,160 @@
         </div>
       </div>
 
+      <!-- ================= TAB: BACKUP DO BANCO DE DADOS ================= -->
+      <div id="tab-backup" class="tab-content hidden space-y-6">
+        <!-- Banner de Segurança -->
+        <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-3xl p-6 text-white shadow-lg shadow-emerald-600/20 relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-6 text-white/10 text-9xl pointer-events-none">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div class="relative z-10 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur text-xs font-bold mb-3">
+              <i class="fa-solid fa-lock text-emerald-200"></i>
+              <span>Proteção Total dos Dados</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black tracking-tight">
+              Central de Backup do Banco de Dados
+            </h2>
+            <p class="text-emerald-100 text-xs sm:text-sm mt-1.5 leading-relaxed">
+              Seus dados de produtos, estoque, vendas e clientes estão armazenados na nuvem Supabase. Aqui você pode gerar e baixar uma cópia completa de segurança em 1 clique a qualquer momento.
+            </p>
+          </div>
+        </div>
+
+        <!-- Estatísticas do Banco de Dados em Tempo Real -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-bold text-slate-500 uppercase">Produtos no Catálogo</p>
+              <p class="text-2xl font-black text-slate-800 mt-0.5" id="backupTotalProds">0</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-box-open"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-bold text-slate-500 uppercase">Clientes Cadastrados</p>
+              <p class="text-2xl font-black text-slate-800 mt-0.5" id="backupTotalClientes">0</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-users"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-bold text-slate-500 uppercase">Vendas Registradas</p>
+              <p class="text-2xl font-black text-emerald-600 mt-0.5" id="backupTotalVendas">0</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-bold text-slate-500 uppercase">Notas Fiscais (PDF)</p>
+              <p class="text-2xl font-black text-purple-600 mt-0.5" id="backupTotalLogs">0</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ações de Download de Backup -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Card 1: Backup Completo JSON -->
+          <div class="bg-white rounded-2xl border-2 border-emerald-500/30 p-5 shadow-sm flex flex-col justify-between hover:border-emerald-500 transition">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl mb-3">
+                <i class="fa-solid fa-database"></i>
+              </div>
+              <h3 class="font-extrabold text-base text-slate-800">Backup Completo (JSON)</h3>
+              <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                Exporta todo o banco de dados (produtos, estoque, clientes, histórico de vendas e logs de NF) em um único arquivo universal.
+              </p>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100">
+              <button onclick="gerarBackupCompletoJSON()" id="btnBaixarBackupJson" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-download"></i>
+                <span>Baixar Backup Completo</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 2: Exportar Planilha de Produtos -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between hover:border-orange-300 transition">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center text-2xl mb-3">
+                <i class="fa-solid fa-file-excel"></i>
+              </div>
+              <h3 class="font-extrabold text-base text-slate-800">Planilha de Produtos (CSV)</h3>
+              <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                Exporta todos os produtos, quantidades em estoque, custos pagos e preços sugeridos em formato compatível com Excel e Google Planilhas.
+              </p>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100">
+              <button onclick="exportarTabelaCSV('produtos')" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-orange-50 hover:text-orange-700 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 border border-slate-200">
+                <i class="fa-solid fa-file-csv"></i>
+                <span>Baixar CSV Produtos</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 3: Exportar Planilha de Vendas -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between hover:border-blue-300 transition">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-2xl mb-3">
+                <i class="fa-solid fa-chart-simple"></i>
+              </div>
+              <h3 class="font-extrabold text-base text-slate-800">Planilha de Vendas (CSV)</h3>
+              <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                Exporta todo o histórico de vendas realizadas, formas de pagamento, clientes, lucros obtidos e status de quitação.
+              </p>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100">
+              <button onclick="exportarTabelaCSV('vendas')" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 border border-slate-200">
+                <i class="fa-solid fa-file-csv"></i>
+                <span>Baixar CSV Vendas</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informações de Segurança e Backup Diário Automático -->
+        <div class="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm space-y-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base">
+              <i class="fa-solid fa-robot"></i>
+            </span>
+            <div>
+              <h4 class="font-extrabold text-sm text-slate-800">Backup Automático Diário em Nuvem (GitHub Actions)</h4>
+              <p class="text-xs text-slate-500">Seu repositório conta com rotina automatizada que roda diariamente às 03:00</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs text-slate-600">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2">
+              <i class="fa-solid fa-check text-emerald-600 mt-0.5"></i>
+              <div>
+                <b class="text-slate-800">Cópia Independente</b>
+                <p class="text-[11px] text-slate-500 mt-0.5">Mesmo se o navegador for fechado ou o computador desligado, a nuvem mantém snapshots dos dados.</p>
+              </div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-blue-600 mt-0.5"></i>
+              <div>
+                <b class="text-slate-800">Histórico de Versões</b>
+                <p class="text-[11px] text-slate-500 mt-0.5">Cada backup é gravado com data e hora exata para permitir restauração ponto-a-ponto.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       </main>
     </div>
   </div>
@@ -1482,7 +1644,8 @@
         'aniversariantes': { titulo: 'Central de Aniversariantes', icone: 'fa-cake-candles text-pink-500' },
         'historico': { titulo: 'Histórico de Vendas', icone: 'fa-clock-rotate-left' },
         'importacoes': { titulo: 'Log de Importações (PDF)', icone: 'fa-file-lines' },
-        'novo-produto': { titulo: 'Novo Produto', icone: 'fa-plus' }
+        'novo-produto': { titulo: 'Novo Produto', icone: 'fa-plus' },
+        'backup': { titulo: 'Central de Backup & Segurança', icone: 'fa-shield-halved text-emerald-600' }
       };
       const info = titulos[nome] || { titulo: 'Painel', icone: 'fa-bars' };
       const elTitulo = document.getElementById('tituloAbaAtiva');
@@ -1498,6 +1661,9 @@
       }
       if (nome === 'importacoes') {
         renderizarLogsImportacao();
+      }
+      if (nome === 'backup') {
+        renderizarAbaBackup();
       }
     }
 
@@ -1526,6 +1692,7 @@
         renderizarHistoricoVendas(vendasCache);
         renderizarLogsImportacao();
         renderizarAbaAniversariantes();
+        renderizarAbaBackup();
 
         // Preenche datalist de clientes
         const dl = document.getElementById('clientesList');
@@ -3212,6 +3379,187 @@
       } finally {
         btnSalvar.disabled = false;
         btnSalvar.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações`;
+      }
+    }
+
+    // ================= CENTRAL DE BACKUP DO BANCO =================
+    function renderizarAbaBackup() {
+      const elP = document.getElementById('backupTotalProds');
+      if (elP) elP.textContent = produtosCache.length;
+      const elC = document.getElementById('backupTotalClientes');
+      if (elC) elC.textContent = clientesCache.length;
+      const elV = document.getElementById('backupTotalVendas');
+      if (elV) elV.textContent = vendasCache.length;
+      const elL = document.getElementById('backupTotalLogs');
+      if (elL) {
+        try {
+          const raw = localStorage.getItem('vendas_logs_importacao_nfe');
+          const logs = raw ? JSON.parse(raw) : [];
+          elL.textContent = logs.length;
+        } catch (e) {
+          elL.textContent = '0';
+        }
+      }
+    }
+
+    async function gerarBackupCompletoJSON() {
+      const btn = document.getElementById('btnBaixarBackupJson');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Gerando arquivo de backup...`;
+      }
+
+      try {
+        // Busca os dados mais recentes diretamente do Supabase
+        const [resProds, resClientes, resVendas, resLogs] = await Promise.all([
+          sbClient.from('produtos').select('*').order('codigo'),
+          sbClient.from('clientes').select('*').order('nome'),
+          sbClient.from('vendas').select('*').order('data_venda', { ascending: false }),
+          sbClient.from('logs_importacao_nfe').select('*').order('created_at', { ascending: false })
+        ]);
+
+        const produtos = resProds.data || produtosCache;
+        const clientes = resClientes.data || clientesCache;
+        const vendas = resVendas.data || vendasCache;
+        const logsNf = resLogs.data || (JSON.parse(localStorage.getItem('vendas_logs_importacao_nfe') || '[]'));
+
+        const agora = new Date();
+        const ano = agora.getFullYear();
+        const mes = String(agora.getMonth() + 1).padStart(2, '0');
+        const dia = String(agora.getDate()).padStart(2, '0');
+        const hora = String(agora.getHours()).padStart(2, '0');
+        const min = String(agora.getMinutes()).padStart(2, '0');
+        const dataFormatada = `${dia}/${mes}/${ano} ${hora}:${min}`;
+
+        const payloadBackup = {
+          metadata: {
+            sistema: "Vendas Barreto Corrêa",
+            versao_sistema: "2.0",
+            banco_origem: "Supabase PostgreSQL Nuvem",
+            gerado_em_iso: agora.toISOString(),
+            gerado_em_br: dataFormatada,
+            usuario_gerador: (JSON.parse(localStorage.getItem('vendas_barreto_user') || '{}').nome) || 'Administrador'
+          },
+          estatisticas: {
+            total_produtos: produtos.length,
+            total_clientes: clientes.length,
+            total_vendas: vendas.length,
+            total_logs_nfe: logsNf.length,
+            total_estoque_unidades: produtos.reduce((acc, p) => acc + (parseInt(p.quantidade_estoque) || 0), 0),
+            total_faturado_acumulado: vendas.reduce((acc, v) => acc + (parseFloat(v.vl_total_venda) || 0), 0)
+          },
+          banco_de_dados: {
+            produtos: produtos,
+            clientes: clientes,
+            vendas: vendas,
+            logs_importacao_nfe: logsNf
+          }
+        };
+
+        const jsonString = JSON.stringify(payloadBackup, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const nomeArquivo = `backup_vendas_barreto_${ano}-${mes}-${dia}_${hora}h${min}.json`;
+        a.href = url;
+        a.download = nomeArquivo;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Backup Gerado com Sucesso!',
+          html: `
+            <div class="text-left text-xs text-slate-600 space-y-1 mt-2">
+              <p><b>Arquivo:</b> <span class="font-mono text-emerald-700">${nomeArquivo}</span></p>
+              <p><b>Produtos salvos:</b> ${produtos.length}</p>
+              <p><b>Clientes salvos:</b> ${clientes.length}</p>
+              <p><b>Vendas salvas:</b> ${vendas.length}</p>
+              <p><b>Logs de NF salvos:</b> ${logsNf.length}</p>
+              <p class="text-emerald-600 font-bold mt-2">✅ O arquivo foi baixado na sua pasta de Downloads.</p>
+            </div>
+          `,
+          confirmButtonColor: '#059669',
+          confirmButtonText: 'Entendido'
+        });
+
+      } catch (err) {
+        console.error("Erro ao gerar backup:", err);
+        Swal.fire('Erro no Backup', 'Não foi possível gerar o backup completo: ' + err.message, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-download"></i><span>Baixar Backup Completo</span>`;
+        }
+      }
+    }
+
+    function exportarTabelaCSV(tipo) {
+      try {
+        let csvContent = "";
+        let nomeArquivo = "";
+
+        if (tipo === 'produtos') {
+          nomeArquivo = `produtos_estoque_${hojeISO()}.csv`;
+          const cabecalho = ["Código", "Descrição", "Categoria", "Estoque Atual", "Comprado", "Vendido", "Custo Pago", "Valor Revista", "Preço Promo", "Venda Praticada"];
+          const linhas = produtosCache.map(p => [
+            `"${p.codigo || ''}"`,
+            `"${(p.descricao || '').replace(/"/g, '""')}"`,
+            `"${p.categoria || 'Geral'}"`,
+            p.quantidade_estoque || 0,
+            p.quantidade_comprada || 0,
+            p.quantidade_vendida || 0,
+            (p.vl_unit_pago || 0).toFixed(2).replace('.', ','),
+            (p.preco_revista || 0).toFixed(2).replace('.', ','),
+            (p.preco_revista_promo || 0).toFixed(2).replace('.', ','),
+            (p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido || 0).toFixed(2).replace('.', ',')
+          ]);
+          csvContent = [cabecalho.join(';'), ...linhas.map(e => e.join(';'))].join('\r\n');
+
+        } else if (tipo === 'vendas') {
+          nomeArquivo = `historico_vendas_${hojeISO()}.csv`;
+          const cabecalho = ["ID", "Data", "Código", "Produto", "Qtd", "Custo Unit", "Preço Venda Unit", "Valor Total", "Lucro Total", "Cliente", "Telefone", "Forma Pagamento", "Status Pagamento", "Observações"];
+          const linhas = vendasCache.map(v => [
+            v.id,
+            v.data_venda || '',
+            `"${v.codigo || ''}"`,
+            `"${(v.descricao || '').replace(/"/g, '""')}"`,
+            v.quantidade || 1,
+            (v.vl_unit_pago || 0).toFixed(2).replace('.', ','),
+            (v.vl_unit_venda || 0).toFixed(2).replace('.', ','),
+            (v.vl_total_venda || 0).toFixed(2).replace('.', ','),
+            (v.lucro_total || 0).toFixed(2).replace('.', ','),
+            `"${(v.cliente || '').replace(/"/g, '""')}"`,
+            `"${v.cliente_telefone || ''}"`,
+            `"${v.forma_pagamento || ''}"`,
+            `"${v.status_pagamento || ''}"`,
+            `"${(v.observacoes || '').replace(/"/g, '""')}"`
+          ]);
+          csvContent = [cabecalho.join(';'), ...linhas.map(e => e.join(';'))].join('\r\n');
+        }
+
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nomeArquivo;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Planilha Exportada!',
+          text: `O arquivo ${nomeArquivo} foi baixado e é 100% compatível com o Excel.`,
+          timer: 1800,
+          showConfirmButton: false
+        });
+
+      } catch (err) {
+        Swal.fire('Erro', 'Não foi possível exportar a planilha: ' + err.message, 'error');
       }
     }
 

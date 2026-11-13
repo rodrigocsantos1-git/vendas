@@ -1,0 +1,57 @@
+name: Backup Diario do Supabase
+
+on:
+  schedule:
+    # 06:00 UTC = 03:00 Horário de Brasília (BRT) todos os dias
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Permite disparar o backup manualmente pelo painel do GitHub Actions
+
+jobs:
+  backup:
+    name: Executar Backup & Snapshot
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout do Repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Instalar Dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install supabase
+
+      - name: Executar Script de Backup
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://evqjlgfhdpisxxbvxelh.supabase.co' }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY || 'sb_publishable_YLDCZL8qtWXqIFEeH7QzfQ_zf7v5gcQ' }}
+        run: |
+          python backup_supabase.py
+
+      - name: Salvar Artefato no GitHub (Retencao 90 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-supabase-${{ github.run_id }}
+          path: backups/
+          retention-days: 90
+
+      - name: Comitar e Enviar Backup para o Repositorio
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backups/
+          if git diff --staged --quiet; then
+            echo "Nenhuma alteração nos dados do banco desde o último backup."
+          else
+            git commit -m "chore(backup): snapshot diario do banco de dados [skip ci]"
+            git push
+          fi

@@ -1,0 +1,6 @@
+﻿id,produto_id,codigo,descricao,quantidade,vl_unit_pago,vl_unit_venda,desconto_repassado_unit,vl_total_venda,lucro_total,cliente_id,cliente,cliente_telefone,cliente_email,cliente_nascimento,forma_pagamento,status_pagamento,data_venda,observacoes,criado_em
+4,,17049,ESSENCIAL OUD VANIL DEO PARFU FEM 100ML,1,116.0,174.0,0.0,174.0,58.0,,Felipe ( Caps ),,,,Pix,Recebido,2026-11-12,,2026-11-12T23:13:38.115578+00:00
+5,,72468,KMAX MASC DEO PARFUM 100ML,1,84.0,168.0,0.0,168.0,84.0,,Felipe ( Caps ),,,,Pix,Recebido,2026-11-12,,2026-11-12T23:14:40.964316+00:00
+6,,76423,ESSENCIAL EXC DEO PARFUM FEM 100ML 2020,1,84.0,168.0,0.0,168.0,84.0,,Kamila ( Caps ),,,,Pix,Recebido,2026-11-12,,2026-11-12T23:16:02.608801+00:00
+7,,194822,ESSENCIAL HID ATO FEM MAOS 40G,1,16.0,32.0,0.0,32.0,16.0,,Kamila ( Caps ),,,,Pix,Recebido,2026-11-12,,2026-11-12T23:17:08.627938+00:00
+3,,92796,MMBB SABONETE EM BARRA 2X100G,2,10.0,20.0,0.0,40.0,20.0,,Maria Ingraça,,,,Pix,Recebido,2026-11-09,,2026-11-09T03:11:29.726747+00:00
