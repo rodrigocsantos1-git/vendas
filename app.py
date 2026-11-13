@@ -386,6 +386,41 @@ with tab_dash:
             )
             st.plotly_chart(fig_pie, use_container_width=True)
 
+        st.markdown("<hr style='margin: 20px 0;'>", unsafe_allow_html=True)
+        col_dash_extra1, col_dash_extra2 = st.columns(2)
+        with col_dash_extra1:
+            st.subheader("🏆 Top Vendas (Mais Vendidos)")
+            if not df_vendas.empty:
+                top_vendas = df_vendas.groupby(['codigo', 'descricao']).agg({
+                    'quantidade': 'sum',
+                    'vl_total_venda': 'sum'
+                }).reset_index().sort_values(by='quantidade', ascending=False).head(8)
+                top_vendas.columns = ['Código', 'Produto', 'Qtd Vendida', 'Total Faturado']
+                top_vendas['Total Faturado'] = top_vendas['Total Faturado'].apply(format_currency)
+                st.dataframe(top_vendas, use_container_width=True, hide_index=True)
+            else:
+                st.info("Nenhuma venda registrada ainda.")
+                
+        with col_dash_extra2:
+            st.subheader("⚠️ Estoque Baixo (≤ 1 unidade)")
+            df_baixo = df_prod[df_prod['quantidade_estoque'] <= 1].sort_values(by='quantidade_estoque', ascending=True)
+            if not df_baixo.empty:
+                st.dataframe(
+                    df_baixo[['codigo', 'descricao', 'categoria', 'quantidade_estoque', 'vl_unit_pago', 'vl_unit_venda_sugerida_final']],
+                    column_config={
+                        'codigo': 'Código',
+                        'descricao': 'Produto',
+                        'categoria': 'Categoria',
+                        'quantidade_estoque': st.column_config.NumberColumn('Estoque', format='%d un'),
+                        'vl_unit_pago': st.column_config.NumberColumn('Custo Pago', format='R$ %.2f'),
+                        'vl_unit_venda_sugerida_final': st.column_config.NumberColumn('Venda Sugerida', format='R$ %.2f')
+                    },
+                    use_container_width=True,
+                    hide_index=True
+                )
+            else:
+                st.success("Nenhum produto em estoque crítico (≤ 1 un).")
+
 # ==========================================
 # ABA 2: ESTOQUE, CATÁLOGO & PREÇOS (EDIÇÃO)
 # ==========================================

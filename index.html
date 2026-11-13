@@ -134,230 +134,338 @@
   </div>
 
   <!-- ================= APLICAÇÃO PRINCIPAL (EXIBIDA APÓS LOGIN) ================= -->
-  <div id="appPrincipal" class="hidden">
-    <!-- Top Navbar -->
-    <nav class="bg-white/90 backdrop-blur sticky top-0 z-40 border-b border-orange-100 shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16 items-center">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
-              <i class="fa-solid fa-spa text-lg"></i>
-            </div>
-            <div>
-              <h1 class="font-extrabold text-lg sm:text-xl text-slate-800 tracking-tight leading-tight">
-                Vendas <span class="text-orange-600">Barreto Corrêa</span>
-              </h1>
-              <p class="text-[11px] font-medium text-slate-600 flex items-center gap-1.5">
-                <span>Painel Administrativo</span>
-                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span class="text-emerald-600 font-semibold">Supabase Nuvem</span>
-              </p>
-            </div>
-          </div>
+  <div id="appPrincipal" class="hidden min-h-screen flex flex-col md:flex-row bg-[#FDFBF7]">
 
-          <!-- User info & Logout -->
-          <div class="flex items-center gap-2 sm:gap-3">
-            <div class="hidden sm:flex flex-col text-right">
-              <span id="navNomeUsuario" class="text-xs font-bold text-slate-800">Administrador</span>
-              <span class="text-[10px] text-orange-600 font-semibold uppercase tracking-wider">Acesso Total</span>
-            </div>
-            <button onclick="carregarTudo(true)" title="Atualizar Dados" class="p-2 text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition">
-              <i class="fa-solid fa-arrows-rotate text-sm" id="syncIcon"></i>
-            </button>
-            <button onclick="mudarAba('venda')" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-md shadow-orange-600/25 flex items-center gap-1.5 transition">
-              <i class="fa-solid fa-plus-circle"></i>
-              <span class="hidden sm:inline">Nova Venda</span>
-            </button>
-            <button onclick="fazerLogout()" title="Sair do Sistema" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
-              <i class="fa-solid fa-right-from-bracket text-sm"></i>
-            </button>
-          </div>
+    <!-- Topbar Mobile (Visível apenas em telas menores que md) -->
+    <header class="md:hidden bg-white border-b border-orange-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-sm">
+          <i class="fa-solid fa-spa text-sm"></i>
+        </div>
+        <div>
+          <h1 class="font-black text-sm text-slate-800 leading-tight">Vendas <span class="text-orange-600">Barreto</span></h1>
+          <p class="text-[9px] text-emerald-600 font-semibold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Supabase Nuvem
+          </p>
         </div>
       </div>
-    </nav>
-
-    <!-- Navigation Tabs -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-      <div class="flex overflow-x-auto gap-2 p-1.5 bg-white/80 rounded-2xl border border-orange-100 shadow-sm custom-scrollbar">
-        <button onclick="mudarAba('dashboard')" id="tabBtn-dashboard" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition bg-orange-600 text-white shadow-sm">
-          <i class="fa-solid fa-chart-pie"></i>
-          <span>Visão Geral</span>
+      <div class="flex items-center gap-2">
+        <button onclick="carregarTudo(true)" title="Sincronizar Dados" class="p-2 text-slate-600 hover:text-orange-600 rounded-lg">
+          <i class="fa-solid fa-arrows-rotate text-sm"></i>
         </button>
-        <button onclick="mudarAba('produtos')" id="tabBtn-produtos" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
-          <i class="fa-solid fa-box-open"></i>
-          <span>Estoque & Produtos</span>
-          <span id="badgeEstoque" class="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-extrabold">0</span>
-        </button>
-        <button onclick="mudarAba('venda')" id="tabBtn-venda" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
-          <i class="fa-solid fa-cash-register"></i>
-          <span>Registrar Venda</span>
-        </button>
-        <button onclick="mudarAba('clientes')" id="tabBtn-clientes" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
-          <i class="fa-solid fa-users"></i>
-          <span>Clientes</span>
-          <span id="badgeClientes" class="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-extrabold">0</span>
-        </button>
-        <button onclick="mudarAba('historico')" id="tabBtn-historico" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
-          <i class="fa-solid fa-clock-rotate-left"></i>
-          <span>Histórico de Vendas</span>
-        </button>
-        <button onclick="mudarAba('importacoes')" id="tabBtn-importacoes" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
-          <i class="fa-solid fa-file-lines"></i>
-          <span>Log de Importações (PDF)</span>
-          <span id="badgeLogsImportacao" class="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-extrabold">0</span>
-        </button>
-        <button onclick="mudarAba('novo-produto')" id="tabBtn-novo-produto" class="tab-btn px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
-          <i class="fa-solid fa-plus"></i>
-          <span>Novo Produto</span>
+        <button onclick="alternarSidebarMobile()" class="p-2 text-slate-700 hover:text-orange-600 rounded-xl bg-orange-50">
+          <i class="fa-solid fa-bars text-base"></i>
         </button>
       </div>
-    </div>
+    </header>
 
-    <!-- Content Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+    <!-- Backdrop escuro para fechar o menu mobile ao clicar fora -->
+    <div id="sidebarBackdrop" onclick="alternarSidebarMobile(false)" class="fixed inset-0 bg-slate-900/40 z-40 hidden md:hidden transition-opacity"></div>
 
-      <!-- ================= TAB: DASHBOARD (VISÃO GERAL COM GRÁFICOS) ================= -->
-      <div id="tab-dashboard" class="tab-content space-y-6">
-        <!-- KPI Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
-            <div>
-              <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total em Estoque</p>
-              <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1" id="kpiEstoqueQtd">0</p>
-              <p class="text-[11px] text-slate-600 mt-0.5" id="kpiEstoqueItens">0 itens cadastrados</p>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl">
-              <i class="fa-solid fa-cubes"></i>
-            </div>
+    <!-- ================= BARRA LATERAL ESQUERDA (SIDEBAR) ================= -->
+    <aside id="sidebarPrincipal" class="fixed md:sticky top-0 bottom-0 left-0 z-50 w-64 bg-white border-r border-orange-100 flex flex-col h-screen transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out shadow-xl md:shadow-none flex-shrink-0">
+      <!-- Topo da Barra Lateral: Logo & Identidade -->
+      <div class="p-4 sm:p-5 border-b border-orange-100 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+            <i class="fa-solid fa-spa text-lg"></i>
           </div>
-
-          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
-            <div>
-              <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Valor do Investimento</p>
-              <p class="text-xl sm:text-2xl font-extrabold text-slate-800 mt-1" id="kpiEstoqueValor">R$ 0,00</p>
-              <p class="text-[11px] text-emerald-600 font-medium mt-0.5">Valor pago na nota</p>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
-              <i class="fa-solid fa-receipt"></i>
-            </div>
-          </div>
-
-          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
-            <div>
-              <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Faturado</p>
-              <p class="text-xl sm:text-2xl font-extrabold text-emerald-600 mt-1" id="kpiTotalVendas">R$ 0,00</p>
-              <p class="text-[11px] text-slate-600 mt-0.5" id="kpiVendasQtd">0 vendas</p>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-              <i class="fa-solid fa-sack-dollar"></i>
-            </div>
-          </div>
-
-          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
-            <div>
-              <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Lucro Estimado</p>
-              <p class="text-xl sm:text-2xl font-extrabold text-blue-600 mt-1" id="kpiLucroTotal">R$ 0,00</p>
-              <p class="text-[11px] text-slate-600 mt-0.5" id="kpiMargemMedia">Margem: 0%</p>
-            </div>
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
-              <i class="fa-solid fa-chart-line"></i>
-            </div>
+          <div>
+            <h1 class="font-black text-base text-slate-800 tracking-tight leading-tight">
+              Vendas <span class="text-orange-600">Barreto</span>
+            </h1>
+            <p class="text-[10px] font-medium text-slate-500 flex items-center gap-1.5">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span class="text-emerald-600 font-semibold">Supabase Nuvem</span>
+            </p>
           </div>
         </div>
+        <!-- Botão Fechar (Apenas Mobile) -->
+        <button onclick="alternarSidebarMobile(false)" class="md:hidden p-1.5 text-slate-400 hover:text-slate-700 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
 
-        <!-- SEÇÃO DE GRÁFICOS (IDÊNTICA AO STREAMLIT / PYTHON COM VALORES VISÍVEIS) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Gráfico 1: Comparativo Financeiro Global -->
-          <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                  <i class="fa-solid fa-chart-column text-orange-600 text-lg"></i>
-                  <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Comparativo Financeiro Global</h3>
+      <!-- Ação Rápida: Botão Nova Venda -->
+      <div class="p-3">
+        <button onclick="mudarAba('venda'); alternarSidebarMobile(false);" class="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-md shadow-orange-600/25 flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-plus-circle text-sm"></i>
+          <span>Registrar Nova Venda</span>
+        </button>
+      </div>
+
+      <!-- Links de Navegação da Barra Lateral -->
+      <nav class="flex-1 px-3 py-1 space-y-1 overflow-y-auto custom-scrollbar">
+        <button onclick="mudarAba('dashboard'); alternarSidebarMobile(false);" id="tabBtn-dashboard" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition bg-orange-600 text-white shadow-sm">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-chart-pie w-4 text-center"></i>
+            <span>Visão Geral</span>
+          </div>
+        </button>
+
+        <button onclick="mudarAba('produtos'); alternarSidebarMobile(false);" id="tabBtn-produtos" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-box-open w-4 text-center"></i>
+            <span>Estoque & Produtos</span>
+          </div>
+          <span id="badgeEstoque" class="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-extrabold">0</span>
+        </button>
+
+        <button onclick="mudarAba('venda'); alternarSidebarMobile(false);" id="tabBtn-venda" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-cash-register w-4 text-center"></i>
+            <span>Registrar Venda</span>
+          </div>
+        </button>
+
+        <button onclick="mudarAba('clientes'); alternarSidebarMobile(false);" id="tabBtn-clientes" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-users w-4 text-center"></i>
+            <span>Clientes</span>
+          </div>
+          <span id="badgeClientes" class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-extrabold">0</span>
+        </button>
+
+        <!-- NOVO MENU DEDICADO: Aniversariantes do Mês -->
+        <button onclick="mudarAba('aniversariantes'); alternarSidebarMobile(false);" id="tabBtn-aniversariantes" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-pink-600 hover:bg-pink-50">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-cake-candles w-4 text-center text-pink-500"></i>
+            <span>Aniversariantes</span>
+          </div>
+          <span id="badgeAniversariantes" class="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-100 text-pink-700 font-extrabold">0</span>
+        </button>
+
+        <button onclick="mudarAba('historico'); alternarSidebarMobile(false);" id="tabBtn-historico" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-clock-rotate-left w-4 text-center"></i>
+            <span>Histórico de Vendas</span>
+          </div>
+        </button>
+
+        <button onclick="mudarAba('importacoes'); alternarSidebarMobile(false);" id="tabBtn-importacoes" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-file-lines w-4 text-center"></i>
+            <span>Logs de NF (PDF)</span>
+          </div>
+          <span id="badgeLogsImportacao" class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-extrabold">0</span>
+        </button>
+
+        <button onclick="mudarAba('novo-produto'); alternarSidebarMobile(false);" id="tabBtn-novo-produto" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-plus w-4 text-center"></i>
+            <span>Novo Produto</span>
+          </div>
+        </button>
+      </nav>
+
+      <!-- Rodapé da Barra Lateral: Perfil do Usuário + Sincronização + Sair -->
+      <div class="p-3 border-t border-orange-100 bg-orange-50/40 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-orange-200 text-orange-800 flex items-center justify-center font-black text-xs flex-shrink-0 shadow-sm">
+            RC
+          </div>
+          <div class="truncate">
+            <p id="navNomeUsuario" class="text-xs font-bold text-slate-800 truncate">Rodrigo Corrêa</p>
+            <p class="text-[10px] text-slate-500 font-medium">Consultoria Natura</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="carregarTudo(true)" title="Sincronizar Dados em Tempo Real" class="p-1.5 text-slate-500 hover:text-orange-600 hover:bg-orange-100/60 rounded-lg transition">
+            <i class="fa-solid fa-arrows-rotate text-xs" id="syncIcon"></i>
+          </button>
+          <button onclick="fazerLogout()" title="Sair do Sistema" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= ÁREA DE CONTEÚDO À DIREITA ================= -->
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+      <!-- Topbar do Conteúdo Principal -->
+      <header class="bg-white/90 backdrop-blur border-b border-orange-100/80 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-20 shadow-xs">
+        <div class="flex items-center gap-3">
+          <h2 id="tituloAbaAtiva" class="font-extrabold text-slate-800 text-base sm:text-lg flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie text-orange-600"></i>
+            <span>Visão Geral</span>
+          </h2>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
+            <i class="fa-solid fa-shield-halved text-emerald-500"></i>
+            <span>Supabase Sincronizado</span>
+          </span>
+          <button onclick="carregarTudo(true)" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-xl transition">
+            <i class="fa-solid fa-arrows-rotate text-xs"></i>
+            <span>Atualizar</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Container das Abas de Conteúdo -->
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+
+        <!-- ================= TAB: DASHBOARD (VISÃO GERAL COM GRÁFICOS) ================= -->
+        <div id="tab-dashboard" class="tab-content space-y-6">
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total em Estoque</p>
+                <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1" id="kpiEstoqueQtd">0</p>
+                <p class="text-[11px] text-slate-600 mt-0.5" id="kpiEstoqueItens">0 itens cadastrados</p>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-cubes"></i>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Valor do Investimento</p>
+                <p class="text-xl sm:text-2xl font-extrabold text-slate-800 mt-1" id="kpiEstoqueValor">R$ 0,00</p>
+                <p class="text-[11px] text-emerald-600 font-medium mt-0.5">Valor pago na nota</p>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-receipt"></i>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Faturado</p>
+                <p class="text-xl sm:text-2xl font-extrabold text-emerald-600 mt-1" id="kpiTotalVendas">R$ 0,00</p>
+                <p class="text-[11px] text-slate-600 mt-0.5" id="kpiVendasQtd">0 vendas</p>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-sack-dollar"></i>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Lucro Estimado</p>
+                <p class="text-xl sm:text-2xl font-extrabold text-blue-600 mt-1" id="kpiLucroTotal">R$ 0,00</p>
+                <p class="text-[11px] text-slate-600 mt-0.5" id="kpiMargemMedia">Margem: 0%</p>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-chart-line"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- LINHA 1 DE GRÁFICOS: VOLUME DE VENDAS DIÁRIO & COMPARATIVO FINANCEIRO -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Gráfico: Volume de Vendas por Dia (Qtd e Itens) -->
+            <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-orange-600 text-lg"></i>
+                    <div>
+                      <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Volume de Vendas por Dia</h3>
+                      <p class="text-[11px] text-slate-500">Unidades vendidas e itens/pedidos por data</p>
+                    </div>
+                  </div>
+                  <span class="text-[11px] text-slate-400 font-semibold">Qtd & Itens</span>
                 </div>
-                <span class="text-[11px] text-slate-400 font-semibold">Visão de Rentabilidade</span>
-              </div>
-              <div class="h-64 sm:h-72 relative">
-                <canvas id="chartComparativoFinanceiro"></canvas>
-              </div>
-            </div>
-            <!-- Resumo numérico direto abaixo do gráfico de barras -->
-            <div id="resumoComparativoCards" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-3 border-t border-slate-100">
-            </div>
-          </div>
-
-          <!-- Gráfico 2: Distribuição por Categoria -->
-          <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                  <i class="fa-solid fa-chart-pie text-amber-500 text-lg"></i>
-                  <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Distribuição do Investimento por Categoria</h3>
+                <div class="h-64 sm:h-72 relative">
+                  <canvas id="chartVolumeVendasDia"></canvas>
                 </div>
-                <span class="text-[11px] text-slate-400 font-semibold">R$ e % de Custo</span>
               </div>
-              <div class="h-56 sm:h-60 relative flex items-center justify-center">
-                <canvas id="chartCategorias"></canvas>
+              <!-- Resumo numérico do gráfico diário -->
+              <div id="resumoVolumeDiaCards" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-3 border-t border-slate-100">
               </div>
             </div>
-            <!-- Lista detalhada com os valores e percentuais de cada categoria -->
-            <div id="listaValoresCategorias" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-4 pt-3 border-t border-slate-100 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+
+            <!-- Gráfico: Comparativo Financeiro Global -->
+            <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-column text-orange-600 text-lg"></i>
+                    <div>
+                      <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Comparativo Financeiro Global</h3>
+                      <p class="text-[11px] text-slate-500">Visão consolidada de rentabilidade</p>
+                    </div>
+                  </div>
+                  <span class="text-[11px] text-slate-400 font-semibold">Tabela vs Venda</span>
+                </div>
+                <div class="h-64 sm:h-72 relative">
+                  <canvas id="chartComparativoFinanceiro"></canvas>
+                </div>
+              </div>
+              <!-- Resumo numérico abaixo do gráfico -->
+              <div id="resumoComparativoCards" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-3 border-t border-slate-100">
+              </div>
+            </div>
+          </div>
+
+          <!-- LINHA 2: TOP VENDAS (MAIS VENDIDOS) & DISTRIBUIÇÃO POR CATEGORIA -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Top Vendas -->
+            <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-500 text-lg"></i>
+                    <div>
+                      <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Top Vendas (Mais Vendidos)</h3>
+                      <p class="text-[11px] text-slate-500">Ranking dos produtos mais vendidos por volume e faturamento</p>
+                    </div>
+                  </div>
+                  <span class="text-xs font-bold px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full">Destaques</span>
+                </div>
+                <div id="listaTopVendas" class="space-y-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                  <p class="text-xs text-slate-500 text-center py-8">Carregando dados de vendas...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Distribuição do Investimento por Categoria -->
+            <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-amber-500 text-lg"></i>
+                    <div>
+                      <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Distribuição do Investimento</h3>
+                      <p class="text-[11px] text-slate-500">Investimento pago por categoria de produto</p>
+                    </div>
+                  </div>
+                  <span class="text-[11px] text-slate-400 font-semibold">R$ e %</span>
+                </div>
+                <div class="h-52 sm:h-56 relative flex items-center justify-center">
+                  <canvas id="chartCategorias"></canvas>
+                </div>
+              </div>
+              <div id="listaValoresCategorias" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-4 pt-3 border-t border-slate-100 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+              </div>
+            </div>
+          </div>
+
+          <!-- LINHA 3: TODOS OS ITENS COM ESTOQUE BAIXO (<= 1 UNIDADE) -->
+          <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-slate-800 text-base">Atenção ao Estoque Baixo (≤ 1 unidade)</h3>
+                  <p class="text-xs text-slate-500">Todos os produtos esgotados (0 un) ou com apenas 1 unidade em estoque que necessitam de reposição</p>
+                </div>
+              </div>
+              <span id="badgeTotalEstoqueBaixo" class="text-xs font-bold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-200">
+                Calculando...
+              </span>
+            </div>
+
+            <div id="listaEstoqueBaixoCompleto" class="max-h-80 overflow-y-auto custom-scrollbar">
+              <p class="text-xs text-slate-500 text-center py-6">Carregando itens de estoque...</p>
             </div>
           </div>
         </div>
-
-        <!-- Birthday & Quick Attention Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Aniversariantes do Mês -->
-          <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2">
-                <i class="fa-solid fa-cake-candles text-pink-500 text-lg"></i>
-                <h3 class="font-bold text-slate-800 text-base">Aniversariantes do Mês</h3>
-              </div>
-              <span id="mesAtualBadge" class="text-xs font-bold px-2 py-0.5 bg-pink-50 text-pink-600 rounded-full"></span>
-            </div>
-            <div id="listaAniversariantes" class="space-y-2.5 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
-              <p class="text-xs text-slate-600 text-center py-4">Nenhum aniversariante cadastrado para este mês.</p>
-            </div>
-          </div>
-
-          <!-- Produtos em Baixo Estoque -->
-          <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2">
-                <i class="fa-solid fa-triangle-exclamation text-amber-500 text-lg"></i>
-                <h3 class="font-bold text-slate-800 text-base">Atenção ao Estoque</h3>
-              </div>
-              <span class="text-xs font-bold px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full">Últimas unidades</span>
-            </div>
-            <div id="listaBaixoEstoque" class="space-y-2.5 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
-              <p class="text-xs text-slate-600 text-center py-4">Carregando estoque...</p>
-            </div>
-          </div>
-
-          <!-- Atalhos Rápidos -->
-          <div class="bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl p-5 text-white shadow-lg shadow-orange-500/20 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center gap-2 mb-3">
-                <i class="fa-solid fa-wand-magic-sparkles text-amber-200 text-lg"></i>
-                <h3 class="font-bold text-lg">Vendas Barreto Corrêa</h3>
-              </div>
-              <p class="text-orange-100 text-xs leading-relaxed">
-                Sistema sincronizado em tempo real na nuvem Supabase. Seus dados de estoque, clientes e vendas estão protegidos e disponíveis em qualquer dispositivo.
-              </p>
-            </div>
-            <div class="mt-4 pt-4 border-t border-white/20 flex flex-col gap-2">
-              <button onclick="mudarAba('venda')" class="w-full bg-white text-orange-700 hover:bg-orange-50 font-bold text-xs py-2.5 rounded-xl shadow transition text-center">
-                <i class="fa-solid fa-cash-register mr-1"></i> Registrar Nova Venda
-              </button>
-              <button onclick="mudarAba('produtos')" class="w-full bg-white/20 hover:bg-white/30 text-white font-semibold text-xs py-2 rounded-xl transition text-center">
-                <i class="fa-solid fa-search mr-1"></i> Consultar Catálogo & Preços
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- ================= TAB: ESTOQUE & PRODUTOS ================= -->
       <div id="tab-produtos" class="tab-content hidden space-y-4">
@@ -685,6 +793,92 @@
         </div>
       </div>
 
+      <!-- ================= TAB: ANIVERSARIANTES DO MÊS ================= -->
+      <div id="tab-aniversariantes" class="tab-content hidden space-y-6">
+        <!-- Banner de Celebração -->
+        <div class="bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 rounded-3xl p-6 text-white shadow-lg shadow-pink-500/20 relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-6 text-white/10 text-9xl pointer-events-none">
+            <i class="fa-solid fa-cake-candles"></i>
+          </div>
+          <div class="relative z-10 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur text-xs font-bold mb-3">
+              <i class="fa-solid fa-gift text-amber-200"></i>
+              <span>Relacionamento & Oportunidades</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black tracking-tight">
+              Aniversariantes do Mês
+            </h2>
+            <p class="text-pink-100 text-xs sm:text-sm mt-1.5 leading-relaxed">
+              Felicite seus clientes com mensagens carinhosas no WhatsApp! Datas comemorativas são a melhor oportunidade para estreitar laços e apresentar promoções exclusivas da Natura.
+            </p>
+          </div>
+        </div>
+
+        <!-- Seletor de Meses & KPIs -->
+        <div class="bg-white rounded-2xl border border-pink-100 p-4 sm:p-5 shadow-sm space-y-4">
+          <!-- Botões dos 12 Meses -->
+          <div>
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-regular fa-calendar text-pink-500"></i> Selecionar Mês do Aniversário
+              </span>
+              <span id="nomeMesAnivBadge" class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-700"></span>
+            </div>
+            <div class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-12 gap-1.5">
+              <button type="button" onclick="renderizarAbaAniversariantes(1)" data-mes="1" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Jan</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(2)" data-mes="2" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Fev</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(3)" data-mes="3" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Mar</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(4)" data-mes="4" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Abr</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(5)" data-mes="5" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Mai</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(6)" data-mes="6" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Jun</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(7)" data-mes="7" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Jul</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(8)" data-mes="8" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Ago</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(9)" data-mes="9" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Set</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(10)" data-mes="10" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Out</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(11)" data-mes="11" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Nov</button>
+              <button type="button" onclick="renderizarAbaAniversariantes(12)" data-mes="12" class="btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold transition text-center">Dez</button>
+            </div>
+          </div>
+
+          <!-- Cards Resumo de Aniversariantes -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
+            <div class="p-3 rounded-2xl bg-pink-50 border border-pink-100 flex items-center justify-between">
+              <div>
+                <p class="text-[11px] font-bold text-slate-600 uppercase">Aniversariantes no Mês</p>
+                <p class="text-xl sm:text-2xl font-black text-pink-600 mt-0.5" id="anivKpiTotalMes">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-pink-500 text-white flex items-center justify-center text-lg shadow-sm">
+                <i class="fa-solid fa-cake-candles"></i>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between">
+              <div>
+                <p class="text-[11px] font-bold text-slate-600 uppercase">Aniversariantes Hoje</p>
+                <p class="text-xl sm:text-2xl font-black text-amber-600 mt-0.5" id="anivKpiHoje">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shadow-sm">
+                <i class="fa-solid fa-star"></i>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+              <div>
+                <p class="text-[11px] font-bold text-slate-600 uppercase">Com WhatsApp Pronto</p>
+                <p class="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5" id="anivKpiWhats">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg shadow-sm">
+                <i class="fa-brands fa-whatsapp"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grade de Clientes Aniversariantes -->
+        <div id="gridAniversariantesMes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        </div>
+      </div>
+
       <!-- ================= TAB: HISTÓRICO DE VENDAS ================= -->
       <div id="tab-historico" class="tab-content hidden space-y-4">
         <div class="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
@@ -838,7 +1032,8 @@
         </div>
       </div>
 
-    </main>
+      </main>
+    </div>
   </div>
 
   <!-- ================= MODAL: CADASTRAR / EDITAR CLIENTE ================= -->
@@ -913,6 +1108,8 @@
     // Instâncias de Gráficos Chart.js
     let chartFinanceiroInstance = null;
     let chartCategoriasInstance = null;
+    let chartVolumeVendasDiaInstance = null;
+    let mesSelecionadoAniversario = new Date().getMonth() + 1;
 
     const NOMES_MESES = [
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -1022,7 +1219,10 @@
       document.getElementById('navNomeUsuario').textContent = user.nome || user.email;
 
       const mesAtual = new Date().getMonth();
-      document.getElementById('mesAtualBadge').textContent = NOMES_MESES[mesAtual];
+      const bMes = document.getElementById('mesAtualBadge');
+      if (bMes) bMes.textContent = NOMES_MESES[mesAtual];
+      const bMesAniv = document.getElementById('nomeMesAnivBadge');
+      if (bMesAniv) bMesAniv.textContent = NOMES_MESES[mesAtual];
 
       carregarTudo();
     }
@@ -1130,6 +1330,22 @@
       });
     }
 
+    function alternarSidebarMobile(abrir) {
+      const sidebar = document.getElementById('sidebarPrincipal');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (!sidebar) return;
+      if (abrir === undefined) {
+        abrir = sidebar.classList.contains('-translate-x-full');
+      }
+      if (abrir) {
+        sidebar.classList.remove('-translate-x-full');
+        if (backdrop) backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        if (backdrop) backdrop.classList.add('hidden');
+      }
+    }
+
     function mudarAba(nome) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1145,9 +1361,28 @@
         targetBtn.classList.add('bg-orange-600', 'text-white', 'shadow-sm');
       }
 
-      // Se mudar para dashboard, atualizar renderização dos gráficos
+      // Atualiza o título e ícone da barra superior à direita
+      const titulos = {
+        'dashboard': { titulo: 'Visão Geral', icone: 'fa-chart-pie' },
+        'produtos': { titulo: 'Estoque & Produtos', icone: 'fa-box-open' },
+        'venda': { titulo: 'Registrar Venda', icone: 'fa-cash-register' },
+        'clientes': { titulo: 'Gestão de Clientes', icone: 'fa-users' },
+        'aniversariantes': { titulo: 'Central de Aniversariantes', icone: 'fa-cake-candles text-pink-500' },
+        'historico': { titulo: 'Histórico de Vendas', icone: 'fa-clock-rotate-left' },
+        'importacoes': { titulo: 'Log de Importações (PDF)', icone: 'fa-file-lines' },
+        'novo-produto': { titulo: 'Novo Produto', icone: 'fa-plus' }
+      };
+      const info = titulos[nome] || { titulo: 'Painel', icone: 'fa-bars' };
+      const elTitulo = document.getElementById('tituloAbaAtiva');
+      if (elTitulo) {
+        elTitulo.innerHTML = `<i class="fa-solid ${info.icone} mr-2 text-orange-600"></i><span>${info.titulo}</span>`;
+      }
+
       if (nome === 'dashboard') {
         setTimeout(renderizarGraficosDashboard, 100);
+      }
+      if (nome === 'aniversariantes') {
+        renderizarAbaAniversariantes();
       }
       if (nome === 'importacoes') {
         renderizarLogsImportacao();
@@ -1178,6 +1413,7 @@
         renderizarClientes(clientesCache);
         renderizarHistoricoVendas(vendasCache);
         renderizarLogsImportacao();
+        renderizarAbaAniversariantes();
 
         // Preenche datalist de clientes
         const dl = document.getElementById('clientesList');
@@ -1206,7 +1442,7 @@
       }
     }
 
-    // Renderizar KPIs do Dashboard
+    // Renderizar KPIs, Top Vendas e Estoque Baixo do Dashboard
     function renderizarDashboard() {
       let totalEstoqueQtd = 0;
       let totalEstoqueCusto = 0;
@@ -1236,65 +1472,285 @@
       document.getElementById('badgeEstoque').textContent = totalEstoqueQtd;
       document.getElementById('badgeClientes').textContent = clientesCache.length;
 
-      // Aniversariantes do Mês Atual
+      // Aniversariantes do Mês Atual para o Badge do Menu Lateral
       const mesAtualNum = new Date().getMonth() + 1;
-      const aniversariantes = clientesCache.filter(c => {
+      const anivMesAtual = clientesCache.filter(c => {
         if (!c.data_nascimento) return false;
         const partes = c.data_nascimento.split('-');
         return parseInt(partes[1]) === mesAtualNum;
       });
+      const badgeAniv = document.getElementById('badgeAniversariantes');
+      if (badgeAniv) badgeAniv.textContent = anivMesAtual.length;
 
-      const divAniversario = document.getElementById('listaAniversariantes');
-      if (aniversariantes.length === 0) {
-        divAniversario.innerHTML = `<p class="text-xs text-slate-600 text-center py-4">Nenhum aniversariante em ${NOMES_MESES[mesAtualNum - 1]}.</p>`;
-      } else {
-        divAniversario.innerHTML = aniversariantes.map(c => {
-          const partes = c.data_nascimento.split('-');
-          const dia = partes[2];
-          const telFormatado = c.telefone ? c.telefone.replace(/\D/g, '') : '';
-          const msgWhats = encodeURIComponent(`Olá ${c.nome}! Desejo um feliz aniversário repleto de bênçãos! Temos condições especiais para você comemorar seu dia.`);
-          const linkWhats = telFormatado ? `https://wa.me/55${telFormatado}?text=${msgWhats}` : '#';
+      // ================= TOP VENDAS (MAIS VENDIDOS) =================
+      const mapTop = {};
+      vendasCache.forEach(v => {
+        const chave = v.codigo || v.descricao;
+        if (!mapTop[chave]) {
+          mapTop[chave] = {
+            codigo: v.codigo || '',
+            descricao: v.descricao || 'Produto',
+            qtdVendida: 0,
+            totalValor: 0
+          };
+        }
+        mapTop[chave].qtdVendida += (parseInt(v.quantidade) || 1);
+        mapTop[chave].totalValor += (parseFloat(v.vl_total_venda) || 0);
+      });
 
-          return `
-            <div class="flex items-center justify-between p-2.5 rounded-xl bg-pink-50/60 border border-pink-100">
-              <div class="flex items-center gap-2.5">
-                <span class="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center font-bold text-xs">${dia}</span>
-                <div>
-                  <p class="font-bold text-xs text-slate-800">${c.nome}</p>
-                  <p class="text-[10px] text-slate-600">${c.telefone || 'Sem telefone'}</p>
+      produtosCache.forEach(p => {
+        const chave = p.codigo || p.descricao;
+        const qtdV = parseInt(p.quantidade_vendida) || 0;
+        if (qtdV > 0) {
+          if (!mapTop[chave]) {
+            mapTop[chave] = {
+              codigo: p.codigo || '',
+              descricao: p.descricao || 'Produto',
+              qtdVendida: qtdV,
+              totalValor: qtdV * (parseFloat(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido) || 0)
+            };
+          } else if (mapTop[chave].qtdVendida < qtdV) {
+            mapTop[chave].qtdVendida = qtdV;
+          }
+        }
+      });
+
+      const listaTop = Object.values(mapTop).sort((a, b) => b.qtdVendida - a.qtdVendida);
+      const divTopVendas = document.getElementById('listaTopVendas');
+      if (divTopVendas) {
+        if (listaTop.length === 0) {
+          divTopVendas.innerHTML = `
+            <div class="py-8 text-center text-slate-500">
+              <i class="fa-solid fa-trophy text-amber-300 text-3xl mb-2"></i>
+              <p class="text-xs font-bold">Nenhuma venda registrada até o momento.</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">Os produtos mais vendidos aparecerão aqui automaticamente.</p>
+            </div>
+          `;
+        } else {
+          const maxQtd = listaTop[0].qtdVendida || 1;
+          divTopVendas.innerHTML = listaTop.slice(0, 8).map((item, idx) => {
+            let badgeRank = '';
+            if (idx === 0) badgeRank = '<span class="w-6 h-6 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center font-black text-xs shadow-sm flex-shrink-0">🥇</span>';
+            else if (idx === 1) badgeRank = '<span class="w-6 h-6 rounded-full bg-slate-300 text-slate-800 flex items-center justify-center font-black text-xs shadow-sm flex-shrink-0">🥈</span>';
+            else if (idx === 2) badgeRank = '<span class="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center font-black text-xs shadow-sm flex-shrink-0">🥉</span>';
+            else badgeRank = `<span class="w-6 h-6 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-black text-[11px] flex-shrink-0">${idx + 1}º</span>`;
+
+            const perc = Math.min(100, Math.round((item.qtdVendida / maxQtd) * 100));
+
+            return `
+              <div class="p-2.5 rounded-xl bg-orange-50/40 border border-orange-100/80 hover:bg-orange-50 transition flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  ${badgeRank}
+                  <div class="truncate flex-1">
+                    <p class="font-bold text-xs text-slate-800 truncate" title="${item.descricao}">${item.descricao}</p>
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <span class="text-[10px] text-slate-500 font-mono">Cód: ${item.codigo || '-'}</span>
+                      <span class="text-[10px] font-semibold text-emerald-600">${formataBRL(item.totalValor)} faturado</span>
+                    </div>
+                    <div class="w-full bg-slate-200/80 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                      <div class="bg-orange-500 h-1.5 rounded-full transition-all duration-500" style="width: ${perc}%"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <span class="px-2.5 py-1 rounded-full bg-orange-100 text-orange-800 font-black text-xs">
+                    ${item.qtdVendida} un
+                  </span>
                 </div>
               </div>
-              ${telFormatado ? `
-                <a href="${linkWhats}" target="_blank" class="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-sm transition">
-                  <i class="fa-brands fa-whatsapp"></i> Parabenizar
-                </a>
-              ` : ''}
-            </div>
-          `;
-        }).join('');
+            `;
+          }).join('');
+        }
       }
 
-      // Baixo Estoque
-      const baixoEstoque = produtosCache.filter(p => (p.quantidade_estoque || 0) <= 1).slice(0, 5);
-      const divBaixo = document.getElementById('listaBaixoEstoque');
-      if (baixoEstoque.length === 0) {
-        divBaixo.innerHTML = `<p class="text-xs text-emerald-600 text-center py-4">Todos os produtos possuem bom estoque!</p>`;
-      } else {
-        divBaixo.innerHTML = baixoEstoque.map(p => {
-          const qtd = p.quantidade_estoque || 0;
-          return `
-            <div class="flex items-center justify-between p-2 rounded-xl ${qtd === 0 ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}">
-              <div class="truncate max-w-[170px]">
-                <p class="font-bold text-xs text-slate-800 truncate">${p.descricao}</p>
-                <p class="text-[10px] text-slate-600">Cód: ${p.codigo}</p>
-              </div>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${qtd === 0 ? 'bg-red-200 text-red-800' : 'bg-amber-200 text-amber-800'}">
-                ${qtd === 0 ? 'Esgotado' : `${qtd} unid.`}
-              </span>
+      // ================= TODOS OS ITENS COM ESTOQUE BAIXO (<= 1) =================
+      const baixoEstoque = produtosCache
+        .filter(p => (p.quantidade_estoque || 0) <= 1)
+        .sort((a, b) => (a.quantidade_estoque || 0) - (b.quantidade_estoque || 0));
+
+      const badgeEstoqueBaixo = document.getElementById('badgeTotalEstoqueBaixo');
+      if (badgeEstoqueBaixo) {
+        badgeEstoqueBaixo.textContent = `${baixoEstoque.length} ${baixoEstoque.length === 1 ? 'item crítico' : 'itens críticos'}`;
+        if (baixoEstoque.length > 0) {
+          badgeEstoqueBaixo.className = 'text-xs font-bold px-2.5 py-1 bg-red-100 text-red-700 rounded-full border border-red-200';
+        } else {
+          badgeEstoqueBaixo.className = 'text-xs font-bold px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full border border-emerald-200';
+        }
+      }
+
+      const divBaixo = document.getElementById('listaEstoqueBaixoCompleto');
+      if (divBaixo) {
+        if (baixoEstoque.length === 0) {
+          divBaixo.innerHTML = `
+            <div class="py-8 text-center bg-emerald-50/50 rounded-xl border border-emerald-100">
+              <i class="fa-solid fa-circle-check text-emerald-500 text-2xl mb-2"></i>
+              <p class="text-xs font-bold text-emerald-700">Excelente! Nenhum produto está com estoque crítico (≤ 1 un) no momento.</p>
             </div>
           `;
-        }).join('');
+        } else {
+          divBaixo.innerHTML = `
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+              <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-orange-50/70 text-slate-600 uppercase text-[10px] font-bold border-b border-orange-100">
+                  <tr>
+                    <th class="py-2.5 px-3">Cód.</th>
+                    <th class="py-2.5 px-3">Descrição do Produto</th>
+                    <th class="py-2.5 px-3">Categoria</th>
+                    <th class="py-2.5 px-3 text-right">Custo Pago</th>
+                    <th class="py-2.5 px-3 text-right">Venda Sugerida</th>
+                    <th class="py-2.5 px-3 text-center">Status / Estoque</th>
+                    <th class="py-2.5 px-3 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  ${baixoEstoque.map(p => {
+                    const qtd = p.quantidade_estoque || 0;
+                    const isZerado = qtd === 0;
+                    const custo = formataBRL(p.vl_unit_pago);
+                    const sugerido = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
+                    return `
+                      <tr class="hover:bg-orange-50/40 transition">
+                        <td class="py-2.5 px-3 font-mono font-bold text-slate-600">${p.codigo}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-800">${p.descricao}</td>
+                        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-medium">${p.categoria || 'Geral'}</span></td>
+                        <td class="py-2.5 px-3 text-right text-slate-600">${custo}</td>
+                        <td class="py-2.5 px-3 text-right font-extrabold text-orange-600">${sugerido}</td>
+                        <td class="py-2.5 px-3 text-center">
+                          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black ${isZerado ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
+                            <i class="fa-solid ${isZerado ? 'fa-circle-xmark' : 'fa-triangle-exclamation'} text-[10px]"></i>
+                            ${isZerado ? 'Esgotado (0 un)' : '1 unidade restante'}
+                          </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                          ${qtd > 0 ? `
+                            <button onclick="iniciarVendaDireta('${p.id}')" class="px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 mx-auto shadow-xs">
+                              <i class="fa-solid fa-cart-shopping"></i> Vender
+                            </button>
+                          ` : `
+                            <button onclick="mudarAba('produtos')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition flex items-center gap-1 mx-auto">
+                              <i class="fa-solid fa-cloud-arrow-up"></i> Repor NF
+                            </button>
+                          `}
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        }
       }
+    }
+
+    // ================= CENTRAL DE ANIVERSARIANTES =================
+    function renderizarAbaAniversariantes(mesDesejado) {
+      if (mesDesejado) mesSelecionadoAniversario = mesDesejado;
+      const mesNum = mesSelecionadoAniversario;
+      const hoje = new Date();
+      const mesAtualReal = hoje.getMonth() + 1;
+      const diaHoje = hoje.getDate();
+
+      document.querySelectorAll('.btn-mes-aniv').forEach(btn => {
+        const m = parseInt(btn.getAttribute('data-mes'));
+        if (m === mesNum) {
+          btn.className = 'btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold bg-pink-600 text-white shadow-sm transition text-center';
+        } else {
+          btn.className = 'btn-mes-aniv px-2 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-pink-600 transition text-center';
+        }
+      });
+
+      const celebrantes = clientesCache.filter(c => {
+        if (!c.data_nascimento) return false;
+        const partes = c.data_nascimento.split('-');
+        return parseInt(partes[1]) === mesNum;
+      }).sort((a, b) => {
+        const diaA = parseInt(a.data_nascimento.split('-')[2]) || 0;
+        const diaB = parseInt(b.data_nascimento.split('-')[2]) || 0;
+        return diaA - diaB;
+      });
+
+      const aniversariantesHoje = celebrantes.filter(c => {
+        const dia = parseInt(c.data_nascimento.split('-')[2]);
+        return mesNum === mesAtualReal && dia === diaHoje;
+      });
+
+      const comWhatsapp = celebrantes.filter(c => c.telefone && c.telefone.replace(/\D/g, '').length >= 10);
+
+      const elTot = document.getElementById('anivKpiTotalMes');
+      if (elTot) elTot.textContent = celebrantes.length;
+      const elHoje = document.getElementById('anivKpiHoje');
+      if (elHoje) elHoje.textContent = aniversariantesHoje.length;
+      const elWhats = document.getElementById('anivKpiWhats');
+      if (elWhats) elWhats.textContent = comWhatsapp.length;
+      const elBadgeMes = document.getElementById('nomeMesAnivBadge');
+      if (elBadgeMes) elBadgeMes.textContent = NOMES_MESES[mesNum - 1];
+
+      const grid = document.getElementById('gridAniversariantesMes');
+      if (!grid) return;
+
+      if (celebrantes.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-pink-100 p-8 shadow-sm">
+            <div class="w-14 h-14 rounded-full bg-pink-50 text-pink-500 flex items-center justify-center text-2xl mx-auto mb-3">
+              <i class="fa-solid fa-cake-candles"></i>
+            </div>
+            <h4 class="font-extrabold text-slate-800 text-base">Nenhum aniversariante em ${NOMES_MESES[mesNum - 1]}</h4>
+            <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">Cadastre a data de nascimento dos seus clientes na aba <b>Clientes</b> para visualizar os aniversários aqui automaticamente.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = celebrantes.map(c => {
+        const partes = c.data_nascimento.split('-');
+        const dia = parseInt(partes[2]) || '-';
+        const isHoje = (mesNum === mesAtualReal && dia === diaHoje);
+        const telFormatado = c.telefone ? c.telefone.replace(/\D/g, '') : '';
+        const msgWhats = encodeURIComponent(`Olá ${c.nome}! 🎂✨ Desejo um Feliz Aniversário repleto de saúde, alegria e bênçãos! Para celebrar seu dia especial, temos mimos e condições imperdíveis na Consultoria Natura. Parabéns! 🎉🎁`);
+        const linkWhats = telFormatado ? `https://wa.me/55${telFormatado}?text=${msgWhats}` : '#';
+
+        return `
+          <div class="bg-white rounded-2xl border ${isHoje ? 'border-2 border-pink-500 shadow-md shadow-pink-500/10' : 'border-pink-100 shadow-sm'} p-4 flex flex-col justify-between hover:border-pink-300 transition relative">
+            ${isHoje ? `
+              <div class="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-pink-600 to-rose-500 text-white font-black text-[10px] shadow-sm uppercase tracking-wider flex items-center gap-1">
+                <i class="fa-solid fa-star text-amber-300"></i> Aniversário Hoje!
+              </div>
+            ` : ''}
+            <div>
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-12 h-12 rounded-2xl ${isHoje ? 'bg-gradient-to-tr from-pink-600 to-rose-500 text-white' : 'bg-pink-100 text-pink-700'} flex flex-col items-center justify-center font-black flex-shrink-0 shadow-sm">
+                  <span class="text-[10px] uppercase leading-none font-bold">Dia</span>
+                  <span class="text-lg leading-tight font-black">${dia}</span>
+                </div>
+                <div class="min-w-0">
+                  <h4 class="font-extrabold text-sm text-slate-800 truncate" title="${c.nome}">${c.nome}</h4>
+                  <p class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                    <i class="fa-solid fa-phone text-[10px] text-slate-400"></i>
+                    <span>${c.telefone || 'Sem telefone'}</span>
+                  </p>
+                </div>
+              </div>
+              ${c.email ? `<p class="text-[11px] text-slate-500 truncate mb-1"><i class="fa-solid fa-envelope text-[10px] mr-1 text-slate-400"></i>${c.email}</p>` : ''}
+              ${c.observacoes ? `<p class="text-[11px] text-slate-600 italic bg-pink-50/50 p-2 rounded-xl border border-pink-100 mb-2">${c.observacoes}</p>` : ''}
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center gap-2 mt-2">
+              ${telFormatado ? `
+                <a href="${linkWhats}" target="_blank" class="flex-1 py-2 px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition">
+                  <i class="fa-brands fa-whatsapp text-sm"></i>
+                  <span>Parabenizar</span>
+                </a>
+              ` : `
+                <span class="flex-1 py-2 text-center text-[10px] text-slate-400 italic">Sem WhatsApp</span>
+              `}
+              <button onclick="mudarAba('venda'); selecionarClienteVenda(${JSON.stringify(c).replace(/"/g, '&quot;')});" class="py-2 px-3 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl text-xs font-bold transition flex items-center gap-1" title="Registrar Venda para Cliente">
+                <i class="fa-solid fa-cart-shopping"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     // ================= GRÁFICOS DO DASHBOARD (CHART.JS COM VALORES VISÍVEIS) =================
@@ -1330,6 +1786,125 @@
             <span class="block text-xs sm:text-sm font-black ${item.cor} mt-0.5">${formataBRL(item.valor)}</span>
           </div>
         `).join('');
+      }
+
+      // 2. Gráfico de Volume de Vendas por Dia (Qtd e Itens)
+      const ctxVol = document.getElementById('chartVolumeVendasDia');
+      if (ctxVol) {
+        if (chartVolumeVendasDiaInstance) {
+          chartVolumeVendasDiaInstance.destroy();
+        }
+
+        const mapDias = {};
+        vendasCache.forEach(v => {
+          if (!v.data_venda) return;
+          const diaISO = String(v.data_venda).substring(0, 10);
+          if (!mapDias[diaISO]) {
+            mapDias[diaISO] = {
+              qtdTotal: 0,
+              itensTotal: 0,
+              valorTotal: 0
+            };
+          }
+          const q = parseInt(v.quantidade) || 1;
+          mapDias[diaISO].qtdTotal += q;
+          mapDias[diaISO].itensTotal += 1;
+          mapDias[diaISO].valorTotal += parseFloat(v.vl_total_venda) || 0;
+        });
+
+        const dias = Object.keys(mapDias).sort();
+        const labelsFormatados = dias.map(d => {
+          const partes = d.split('-');
+          return `${partes[2]}/${partes[1]}`;
+        });
+        const dadosQtd = dias.map(d => mapDias[d].qtdTotal);
+        const dadosItens = dias.map(d => mapDias[d].itensTotal);
+
+        let somaTotalQtd = dadosQtd.reduce((a, b) => a + b, 0);
+        let somaTotalItens = dadosItens.reduce((a, b) => a + b, 0);
+
+        const divResumoVol = document.getElementById('resumoVolumeDiaCards');
+        if (divResumoVol) {
+          divResumoVol.innerHTML = `
+            <div class="p-2 rounded-xl border bg-orange-50 border-orange-200 text-center">
+              <span class="block text-[10px] font-bold text-slate-600 uppercase">Qtd Unidades</span>
+              <span class="block text-xs sm:text-sm font-black text-orange-600 mt-0.5">${somaTotalQtd} un</span>
+            </div>
+            <div class="p-2 rounded-xl border bg-blue-50 border-blue-200 text-center">
+              <span class="block text-[10px] font-bold text-slate-600 uppercase">Vendas Registradas</span>
+              <span class="block text-xs sm:text-sm font-black text-blue-600 mt-0.5">${somaTotalItens} vendas</span>
+            </div>
+            <div class="p-2 rounded-xl border bg-emerald-50 border-emerald-200 text-center col-span-2">
+              <span class="block text-[10px] font-bold text-slate-600 uppercase">Dias Ativos</span>
+              <span class="block text-xs sm:text-sm font-black text-emerald-600 mt-0.5">${dias.length} ${dias.length === 1 ? 'dia ativo' : 'dias ativos'}</span>
+            </div>
+          `;
+        }
+
+        chartVolumeVendasDiaInstance = new Chart(ctxVol, {
+          type: 'bar',
+          data: {
+            labels: labelsFormatados.length > 0 ? labelsFormatados : ['Sem vendas'],
+            datasets: [
+              {
+                label: 'Qtd Unidades Vendidas',
+                data: dadosQtd.length > 0 ? dadosQtd : [0],
+                backgroundColor: 'rgba(234, 88, 12, 0.85)',
+                borderColor: '#ea580c',
+                borderWidth: 1.5,
+                borderRadius: 6
+              },
+              {
+                label: 'Qtd Itens / Vendas',
+                data: dadosItens.length > 0 ? dadosItens : [0],
+                backgroundColor: 'rgba(59, 130, 246, 0.85)',
+                borderColor: '#3b82f6',
+                borderWidth: 1.5,
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  boxWidth: 12,
+                  font: { size: 10, weight: 'bold' }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  afterBody: function(tooltipItems) {
+                    const idx = tooltipItems[0].dataIndex;
+                    const diaISO = dias[idx];
+                    if (diaISO && mapDias[diaISO]) {
+                      return `Total faturado: ${formataBRL(mapDias[diaISO].valorTotal)}`;
+                    }
+                    return '';
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1,
+                  font: { size: 10 }
+                },
+                grid: { color: '#f1f5f9' }
+              },
+              x: {
+                ticks: { font: { size: 10, weight: 'bold' } },
+                grid: { display: false }
+              }
+            }
+          }
+        });
       }
 
       const ctxFin = document.getElementById('chartComparativoFinanceiro');
