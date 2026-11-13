@@ -75,23 +75,6 @@
       background: #cbd5e1;
       border-radius: 9999px;
     }
-    @keyframes scrollEsquerdaParaDireita {
-      0% {
-        transform: translateX(-50%);
-      }
-      100% {
-        transform: translateX(0%);
-      }
-    }
-    .marquee-track-ltr {
-      display: flex;
-      gap: 0.85rem;
-      width: max-content;
-      animation: scrollEsquerdaParaDireita 90s linear infinite;
-    }
-    .marquee-track-ltr:hover {
-      animation-play-state: paused;
-    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-orange-50 via-amber-50 to-stone-100 min-h-screen text-slate-800 pb-12">
@@ -324,33 +307,6 @@
 
         <!-- ================= TAB: DASHBOARD (VISÃO GERAL COM GRÁFICOS) ================= -->
         <div id="tab-dashboard" class="tab-content space-y-6">
-
-          <!-- Carrossel no Topo: Produtos em Estoque & Quantidade Disponível (Ordem Top Vendas, Rola da Esquerda para a Direita) -->
-          <div class="bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 rounded-2xl border border-orange-200/80 p-3 shadow-xs relative overflow-hidden backdrop-blur-sm">
-            <div class="flex items-center justify-between gap-2 px-1 mb-2">
-              <div class="flex items-center gap-2">
-                <span class="w-6 h-6 rounded-lg bg-orange-600 text-white flex items-center justify-center text-xs shadow-xs">
-                  <i class="fa-solid fa-fire text-[11px] text-amber-200"></i>
-                </span>
-                <span class="text-xs font-black text-slate-800 uppercase tracking-wider">Produtos Disponíveis em Estoque</span>
-                <span class="text-[10px] font-extrabold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">Top Vendas</span>
-              </div>
-              <span class="text-[10px] text-slate-400 font-medium hidden sm:inline-flex items-center gap-1">
-                <i class="fa-solid fa-hand-pointer text-[9px]"></i> Passe o mouse para pausar • Clique para vender
-              </span>
-            </div>
-
-            <!-- Faixa com Efeito Fade nas Bordas e Rolo da Esquerda para Direita -->
-            <div class="relative w-full overflow-hidden">
-              <div class="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#FDFBF7] to-transparent z-10 pointer-events-none"></div>
-              <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#FDFBF7] to-transparent z-10 pointer-events-none"></div>
-              
-              <div id="carrosselTopEstoqueTrack" class="marquee-track-ltr py-1">
-                <div class="px-4 py-2 text-xs text-slate-500">Carregando produtos disponíveis...</div>
-              </div>
-            </div>
-          </div>
-
           <!-- KPI Cards -->
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
@@ -1536,7 +1492,6 @@
 
       if (nome === 'dashboard') {
         setTimeout(renderizarGraficosDashboard, 100);
-        renderizarCarrosselTopEstoque();
       }
       if (nome === 'aniversariantes') {
         renderizarAbaAniversariantes();
@@ -1564,7 +1519,6 @@
         vendasCache = resVendas.data || [];
 
         renderizarDashboard();
-        renderizarCarrosselTopEstoque();
         renderizarGraficosDashboard();
         renderizarTabelaProdutos(produtosCache);
         renderizarCategorias();
@@ -1799,67 +1753,6 @@
           `;
         }
       }
-    }
-
-    // ================= CARROSSEL DE PRODUTOS EM ESTOQUE (TOP VENDAS) =================
-    function renderizarCarrosselTopEstoque() {
-      const track = document.getElementById('carrosselTopEstoqueTrack');
-      if (!track) return;
-
-      const emEstoque = produtosCache.filter(p => (p.quantidade_estoque || 0) > 0);
-      if (emEstoque.length === 0) {
-        track.innerHTML = `<div class="px-4 py-2 text-xs text-slate-400">Nenhum produto disponível em estoque no momento.</div>`;
-        return;
-      }
-
-      // Mapeia vendas para ordenar por Top Vendas
-      const vendasPorCod = {};
-      vendasCache.forEach(v => {
-        const k = v.codigo || v.descricao;
-        vendasPorCod[k] = (vendasPorCod[k] || 0) + (parseInt(v.quantidade) || 1);
-      });
-
-      // Ordena por Top Vendas (maior saída primeiro), depois por quantidade em estoque
-      const ordenados = emEstoque.slice().sort((a, b) => {
-        const vA = (vendasPorCod[a.codigo] || 0) + (a.quantidade_vendida || 0);
-        const vB = (vendasPorCod[b.codigo] || 0) + (b.quantidade_vendida || 0);
-        if (vB !== vA) return vB - vA;
-        return (b.quantidade_estoque || 0) - (a.quantidade_estoque || 0);
-      });
-
-      const cardsHtml = ordenados.map((p, idx) => {
-        const sugerido = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
-        let rankIcon = '⭐';
-        let rankText = `${idx + 1}º`;
-        let badgeBg = 'bg-orange-50 text-orange-700 border border-orange-200/80';
-
-        if (idx === 0) { rankIcon = '🥇'; rankText = 'Top 1'; badgeBg = 'bg-amber-100 text-amber-900 border border-amber-300'; }
-        else if (idx === 1) { rankIcon = '🥈'; rankText = 'Top 2'; badgeBg = 'bg-slate-100 text-slate-800 border border-slate-300'; }
-        else if (idx === 2) { rankIcon = '🥉'; rankText = 'Top 3'; badgeBg = 'bg-amber-50 text-amber-800 border border-amber-200'; }
-
-        return `
-          <div onclick="iniciarVendaDireta('${p.id}')" title="Clique para registrar venda deste produto" class="cursor-pointer group flex-shrink-0 bg-white hover:bg-orange-50/90 border border-orange-100/90 hover:border-orange-300 rounded-2xl p-2.5 transition-all duration-200 shadow-2xs hover:shadow-md flex items-center gap-2.5 w-64 select-none">
-            <div class="w-9 h-9 rounded-xl ${badgeBg} flex flex-col items-center justify-center font-black flex-shrink-0">
-              <span class="text-xs leading-none">${rankIcon}</span>
-              <span class="text-[8px] font-extrabold mt-0.5 leading-none">${rankText}</span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="font-extrabold text-xs text-slate-800 truncate group-hover:text-orange-600 transition" title="${p.descricao}">${p.descricao}</p>
-              <div class="flex items-center gap-2 mt-0.5 text-[10px]">
-                <span class="text-slate-400 font-mono">Cód: ${p.codigo}</span>
-                <span class="font-extrabold text-orange-600">${sugerido}</span>
-              </div>
-            </div>
-            <div class="flex-shrink-0 text-right">
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                📦 ${p.quantidade_estoque} un
-              </span>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      track.innerHTML = cardsHtml + cardsHtml;
     }
 
     // ================= CENTRAL DE ANIVERSARIANTES =================
