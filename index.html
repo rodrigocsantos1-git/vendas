@@ -75,6 +75,23 @@
       background: #cbd5e1;
       border-radius: 9999px;
     }
+    @keyframes scrollEsquerdaParaDireita {
+      0% {
+        transform: translateX(-50%);
+      }
+      100% {
+        transform: translateX(0%);
+      }
+    }
+    .marquee-track-ltr {
+      display: flex;
+      gap: 0.85rem;
+      width: max-content;
+      animation: scrollEsquerdaParaDireita 36s linear infinite;
+    }
+    .marquee-track-ltr:hover {
+      animation-play-state: paused;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-orange-50 via-amber-50 to-stone-100 min-h-screen text-slate-800 pb-12">
@@ -307,6 +324,33 @@
 
         <!-- ================= TAB: DASHBOARD (VISÃO GERAL COM GRÁFICOS) ================= -->
         <div id="tab-dashboard" class="tab-content space-y-6">
+
+          <!-- Carrossel no Topo: Produtos em Estoque & Quantidade Disponível (Ordem Top Vendas, Rola da Esquerda para a Direita) -->
+          <div class="bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 rounded-2xl border border-orange-200/80 p-3 shadow-xs relative overflow-hidden backdrop-blur-sm">
+            <div class="flex items-center justify-between gap-2 px-1 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-orange-600 text-white flex items-center justify-center text-xs shadow-xs">
+                  <i class="fa-solid fa-fire text-[11px] text-amber-200"></i>
+                </span>
+                <span class="text-xs font-black text-slate-800 uppercase tracking-wider">Produtos Disponíveis em Estoque</span>
+                <span class="text-[10px] font-extrabold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">Top Vendas</span>
+              </div>
+              <span class="text-[10px] text-slate-400 font-medium hidden sm:inline-flex items-center gap-1">
+                <i class="fa-solid fa-hand-pointer text-[9px]"></i> Passe o mouse para pausar • Clique para vender
+              </span>
+            </div>
+
+            <!-- Faixa com Efeito Fade nas Bordas e Rolo da Esquerda para Direita -->
+            <div class="relative w-full overflow-hidden">
+              <div class="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#FDFBF7] to-transparent z-10 pointer-events-none"></div>
+              <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#FDFBF7] to-transparent z-10 pointer-events-none"></div>
+              
+              <div id="carrosselTopEstoqueTrack" class="marquee-track-ltr py-1">
+                <div class="px-4 py-2 text-xs text-slate-500">Carregando produtos disponíveis...</div>
+              </div>
+            </div>
+          </div>
+
           <!-- KPI Cards -->
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
@@ -1090,6 +1134,118 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: EDITAR REGISTRO DE VENDA ================= -->
+  <div id="modalEditarVenda" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-orange-100 relative animate-fadeIn max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="flex justify-between items-center mb-4 pb-3 border-b border-orange-100">
+        <div>
+          <h3 class="font-extrabold text-lg text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-pen-to-square text-orange-600"></i>
+            <span>Editar Registro de Venda</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Atualize dados, valores, cliente e quantidade da venda</p>
+        </div>
+        <button onclick="fecharModalEditarVenda()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="formEditarVenda" onsubmit="salvarEdicaoVenda(event)" class="space-y-4">
+        <input type="hidden" id="editVendaId">
+
+        <!-- Produto (Informativo) -->
+        <div class="bg-orange-50/70 p-3 rounded-2xl border border-orange-100">
+          <span class="text-[10px] font-bold text-orange-700 uppercase tracking-wider block">Produto Vendido</span>
+          <p id="editVendaDescricao" class="font-bold text-sm text-slate-800 mt-0.5">-</p>
+          <div class="flex items-center gap-3 mt-1 text-[11px] text-slate-600">
+            <span>Cód: <b id="editVendaCodigo" class="font-mono text-slate-800">-</b></span>
+            <span>Custo Pago: <b id="editVendaCusto" class="text-slate-800">-</b></span>
+            <span>Estoque Restante: <b id="editVendaEstoqueAtual" class="text-emerald-700 font-bold">-</b></span>
+          </div>
+        </div>
+
+        <!-- Data da Venda e Quantidade -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data da Venda *</label>
+            <input type="date" id="editVendaData" required class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500 font-bold text-slate-800">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Quantidade Vendida *</label>
+            <input type="number" id="editVendaQtd" min="1" step="1" required oninput="recalcularValoresEdicaoVenda()" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500 font-bold text-slate-800">
+            <span class="text-[10px] text-slate-400 block mt-0.5">O estoque é ajustado automaticamente.</span>
+          </div>
+        </div>
+
+        <!-- Preço Unitário e Valor Total -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Preço Unitário (R$) *</label>
+            <input type="number" id="editVendaPrecoUnit" min="0" step="0.01" required oninput="recalcularValoresEdicaoVenda(true)" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500 font-bold text-slate-800 text-right">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Valor Total (R$) *</label>
+            <input type="number" id="editVendaTotal" min="0" step="0.01" required oninput="recalcularValoresEdicaoVenda(false)" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500 font-black text-orange-600 text-right">
+          </div>
+        </div>
+
+        <!-- Resumo de Lucro Recalculado -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+          <span class="text-slate-600 font-semibold">Lucro Real Estimado:</span>
+          <span id="editVendaLucroPreview" class="font-black text-emerald-600 text-sm">R$ 0,00</span>
+        </div>
+
+        <!-- Cliente e Telefone -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome do Cliente</label>
+            <input type="text" id="editVendaCliente" placeholder="Consumidor Final" list="clientesList" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Telefone / WhatsApp</label>
+            <input type="tel" id="editVendaTelefone" placeholder="(11) 99999-9999" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500">
+          </div>
+        </div>
+
+        <!-- Forma de Pagamento e Status -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Forma de Pagamento</label>
+            <select id="editVendaFormaPag" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-orange-500 text-slate-700 font-semibold">
+              <option value="Pix">Pix</option>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="Cartão de Crédito">Cartão de Crédito</option>
+              <option value="Cartão de Débito">Cartão de Débito</option>
+              <option value="Boleto">Boleto</option>
+              <option value="Fiado / A Prazo">Fiado / A Prazo</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Status do Pagamento</label>
+            <select id="editVendaStatusPag" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-orange-500 text-slate-700 font-semibold">
+              <option value="Recebido">Recebido / Pago (Verde)</option>
+              <option value="Pendente">Pendente (Amarelo / Vermelho)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Observações</label>
+          <input type="text" id="editVendaObs" placeholder="Ex: Desconto especial concedido, entrega em mãos..." class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <div class="flex gap-2 pt-3">
+          <button type="button" onclick="fecharModalEditarVenda()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+            Cancelar
+          </button>
+          <button type="submit" id="btnSalvarEdicaoVenda" class="w-1/2 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ================= SCRIPT PRINCIPAL ================= -->
   <script>
     const SUPABASE_URL = "https://evqjlgfhdpisxxbvxelh.supabase.co";
@@ -1380,6 +1536,7 @@
 
       if (nome === 'dashboard') {
         setTimeout(renderizarGraficosDashboard, 100);
+        renderizarCarrosselTopEstoque();
       }
       if (nome === 'aniversariantes') {
         renderizarAbaAniversariantes();
@@ -1407,6 +1564,7 @@
         vendasCache = resVendas.data || [];
 
         renderizarDashboard();
+        renderizarCarrosselTopEstoque();
         renderizarGraficosDashboard();
         renderizarTabelaProdutos(produtosCache);
         renderizarCategorias();
@@ -1641,6 +1799,67 @@
           `;
         }
       }
+    }
+
+    // ================= CARROSSEL DE PRODUTOS EM ESTOQUE (TOP VENDAS) =================
+    function renderizarCarrosselTopEstoque() {
+      const track = document.getElementById('carrosselTopEstoqueTrack');
+      if (!track) return;
+
+      const emEstoque = produtosCache.filter(p => (p.quantidade_estoque || 0) > 0);
+      if (emEstoque.length === 0) {
+        track.innerHTML = `<div class="px-4 py-2 text-xs text-slate-400">Nenhum produto disponível em estoque no momento.</div>`;
+        return;
+      }
+
+      // Mapeia vendas para ordenar por Top Vendas
+      const vendasPorCod = {};
+      vendasCache.forEach(v => {
+        const k = v.codigo || v.descricao;
+        vendasPorCod[k] = (vendasPorCod[k] || 0) + (parseInt(v.quantidade) || 1);
+      });
+
+      // Ordena por Top Vendas (maior saída primeiro), depois por quantidade em estoque
+      const ordenados = emEstoque.slice().sort((a, b) => {
+        const vA = (vendasPorCod[a.codigo] || 0) + (a.quantidade_vendida || 0);
+        const vB = (vendasPorCod[b.codigo] || 0) + (b.quantidade_vendida || 0);
+        if (vB !== vA) return vB - vA;
+        return (b.quantidade_estoque || 0) - (a.quantidade_estoque || 0);
+      });
+
+      const cardsHtml = ordenados.map((p, idx) => {
+        const sugerido = formataBRL(p.vl_unit_venda_sugerida_final || p.vl_unit_sugerido);
+        let rankIcon = '⭐';
+        let rankText = `${idx + 1}º`;
+        let badgeBg = 'bg-orange-50 text-orange-700 border border-orange-200/80';
+
+        if (idx === 0) { rankIcon = '🥇'; rankText = 'Top 1'; badgeBg = 'bg-amber-100 text-amber-900 border border-amber-300'; }
+        else if (idx === 1) { rankIcon = '🥈'; rankText = 'Top 2'; badgeBg = 'bg-slate-100 text-slate-800 border border-slate-300'; }
+        else if (idx === 2) { rankIcon = '🥉'; rankText = 'Top 3'; badgeBg = 'bg-amber-50 text-amber-800 border border-amber-200'; }
+
+        return `
+          <div onclick="iniciarVendaDireta('${p.id}')" title="Clique para registrar venda deste produto" class="cursor-pointer group flex-shrink-0 bg-white hover:bg-orange-50/90 border border-orange-100/90 hover:border-orange-300 rounded-2xl p-2.5 transition-all duration-200 shadow-2xs hover:shadow-md flex items-center gap-2.5 w-64 select-none">
+            <div class="w-9 h-9 rounded-xl ${badgeBg} flex flex-col items-center justify-center font-black flex-shrink-0">
+              <span class="text-xs leading-none">${rankIcon}</span>
+              <span class="text-[8px] font-extrabold mt-0.5 leading-none">${rankText}</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-extrabold text-xs text-slate-800 truncate group-hover:text-orange-600 transition" title="${p.descricao}">${p.descricao}</p>
+              <div class="flex items-center gap-2 mt-0.5 text-[10px]">
+                <span class="text-slate-400 font-mono">Cód: ${p.codigo}</span>
+                <span class="font-extrabold text-orange-600">${sugerido}</span>
+              </div>
+            </div>
+            <div class="flex-shrink-0 text-right">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                📦 ${p.quantidade_estoque} un
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      track.innerHTML = cardsHtml + cardsHtml;
     }
 
     // ================= CENTRAL DE ANIVERSARIANTES =================
@@ -2874,6 +3093,9 @@
                   <i class="fa-solid ${isPago ? 'fa-rotate-left' : 'fa-check'}"></i>
                   <span>${isPago ? 'Pendente' : 'Dar Baixa'}</span>
                 </button>
+                <button onclick="abrirModalEditarVenda(${v.id})" title="Editar Detalhes da Venda" class="p-1.5 text-blue-600 hover:text-white hover:bg-blue-600 rounded-lg transition">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
                 <button onclick="estornarVenda(${v.id}, '${v.codigo}', ${v.quantidade})" title="Cancelar Venda e Devolver ao Estoque" class="p-1.5 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
@@ -2938,6 +3160,165 @@
         Swal.fire('Estornado!', 'A venda foi cancelada e o estoque restaurado.', 'success');
       } catch (err) {
         Swal.fire('Erro', 'Não foi possível estornar: ' + err.message, 'error');
+      }
+    }
+
+    // ================= EDIÇÃO DE VENDAS =================
+    function abrirModalEditarVenda(vendaId) {
+      const v = vendasCache.find(x => x.id === vendaId);
+      if (!v) {
+        Swal.fire('Atenção', 'Registro de venda não encontrado.', 'warning');
+        return;
+      }
+
+      const p = produtosCache.find(prod => prod.codigo === v.codigo);
+
+      document.getElementById('editVendaId').value = v.id;
+      document.getElementById('editVendaCodigo').textContent = v.codigo || '-';
+      document.getElementById('editVendaDescricao').textContent = v.descricao || 'Produto';
+      document.getElementById('editVendaCusto').textContent = formataBRL(v.vl_unit_pago || (p ? p.vl_unit_pago : 0));
+      document.getElementById('editVendaEstoqueAtual').textContent = `${p ? p.quantidade_estoque : 0} un`;
+
+      let dataVal = hojeISO();
+      if (v.data_venda) {
+        const dStr = String(v.data_venda).substring(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+          dataVal = dStr;
+        }
+      }
+      document.getElementById('editVendaData').value = dataVal;
+      document.getElementById('editVendaQtd').value = v.quantidade || 1;
+      document.getElementById('editVendaPrecoUnit').value = parseFloat(v.vl_unit_venda || 0).toFixed(2);
+      document.getElementById('editVendaTotal').value = parseFloat(v.vl_total_venda || 0).toFixed(2);
+      document.getElementById('editVendaCliente').value = v.cliente || '';
+      document.getElementById('editVendaTelefone').value = v.cliente_telefone || '';
+      document.getElementById('editVendaFormaPag').value = v.forma_pagamento || 'Pix';
+      document.getElementById('editVendaStatusPag').value = (v.status_pagamento === 'Pago' || v.status_pagamento === 'Recebido') ? 'Recebido' : 'Pendente';
+      document.getElementById('editVendaObs').value = v.observacoes || '';
+
+      recalcularValoresEdicaoVenda(true);
+      document.getElementById('modalEditarVenda').classList.remove('hidden');
+    }
+
+    function fecharModalEditarVenda() {
+      document.getElementById('modalEditarVenda').classList.add('hidden');
+    }
+
+    function recalcularValoresEdicaoVenda(atualizarTotalPeloUnitario = true) {
+      const qtd = parseInt(document.getElementById('editVendaQtd').value) || 0;
+      const unitInput = document.getElementById('editVendaPrecoUnit');
+      const totalInput = document.getElementById('editVendaTotal');
+      const vendaId = parseInt(document.getElementById('editVendaId').value);
+      const v = vendasCache.find(x => x.id === vendaId);
+      const p = v ? produtosCache.find(prod => prod.codigo === v.codigo) : null;
+      const custoUnit = parseFloat(v ? (v.vl_unit_pago || (p ? p.vl_unit_pago : 0)) : 0) || 0;
+
+      if (atualizarTotalPeloUnitario) {
+        const unit = parseFloat(unitInput.value) || 0;
+        totalInput.value = (unit * qtd).toFixed(2);
+      } else {
+        const total = parseFloat(totalInput.value) || 0;
+        if (qtd > 0) {
+          unitInput.value = (total / qtd).toFixed(2);
+        }
+      }
+
+      const totalFinal = parseFloat(totalInput.value) || 0;
+      const lucro = totalFinal - (custoUnit * qtd);
+      const lucroEl = document.getElementById('editVendaLucroPreview');
+      if (lucroEl) {
+        lucroEl.textContent = formataBRL(lucro);
+        if (lucro < 0) {
+          lucroEl.className = 'font-black text-red-600 text-sm';
+        } else {
+          lucroEl.className = 'font-black text-emerald-600 text-sm';
+        }
+      }
+    }
+
+    async function salvarEdicaoVenda(event) {
+      event.preventDefault();
+      const vendaId = parseInt(document.getElementById('editVendaId').value);
+      const vendaAntiga = vendasCache.find(x => x.id === vendaId);
+      if (!vendaAntiga) {
+        Swal.fire('Erro', 'Venda não encontrada.', 'error');
+        return;
+      }
+
+      const novaData = document.getElementById('editVendaData').value;
+      const novaQtd = parseInt(document.getElementById('editVendaQtd').value) || 1;
+      const novoPrecoUnit = parseFloat(document.getElementById('editVendaPrecoUnit').value) || 0;
+      const novoTotalVenda = parseFloat(document.getElementById('editVendaTotal').value) || 0;
+      const novoCliente = document.getElementById('editVendaCliente').value.trim();
+      const novoTelefone = document.getElementById('editVendaTelefone').value.trim();
+      const novaFormaPag = document.getElementById('editVendaFormaPag').value;
+      const novoStatusPag = document.getElementById('editVendaStatusPag').value;
+      const novaObs = document.getElementById('editVendaObs').value.trim();
+
+      const btnSalvar = document.getElementById('btnSalvarEdicaoVenda');
+      btnSalvar.disabled = true;
+      btnSalvar.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Gravando...`;
+
+      try {
+        const prod = produtosCache.find(p => p.codigo === vendaAntiga.codigo);
+        const qtdAntiga = vendaAntiga.quantidade || 0;
+        const diffQtd = novaQtd - qtdAntiga; // positivo = aumentou venda (consome mais estoque); negativo = diminuiu (devolve ao estoque)
+
+        if (diffQtd > 0 && prod) {
+          const estoqueDisp = prod.quantidade_estoque || 0;
+          if (estoqueDisp < diffQtd) {
+            throw new Error(`Estoque insuficiente! Você tentou aumentar ${diffQtd} unidade(s), mas há apenas ${estoqueDisp} em estoque.`);
+          }
+        }
+
+        const custoUnit = parseFloat(vendaAntiga.vl_unit_pago || (prod ? prod.vl_unit_pago : 0)) || 0;
+        const novoLucroTotal = novoTotalVenda - (custoUnit * novaQtd);
+
+        // 1. Atualiza registro na tabela 'vendas'
+        const payloadVenda = {
+          data_venda: novaData,
+          quantidade: novaQtd,
+          vl_unit_venda: novoPrecoUnit,
+          vl_total_venda: novoTotalVenda,
+          lucro_total: novoLucroTotal,
+          cliente: novoCliente,
+          cliente_telefone: novoTelefone,
+          forma_pagamento: novaFormaPag,
+          status_pagamento: novoStatusPag,
+          observacoes: novaObs
+        };
+
+        const resVenda = await sbClient.from('vendas').update(payloadVenda).eq('id', vendaId);
+        if (resVenda.error) throw resVenda.error;
+
+        // 2. Se a quantidade mudou, ajusta o estoque e quantidade vendida do produto
+        if (diffQtd !== 0 && prod) {
+          const novoEstoque = Math.max(0, (prod.quantidade_estoque || 0) - diffQtd);
+          const novaVendida = Math.max(0, (prod.quantidade_vendida || 0) + diffQtd);
+          const resProd = await sbClient.from('produtos').update({
+            quantidade_estoque: novoEstoque,
+            quantidade_vendida: novaVendida
+          }).eq('id', prod.id);
+          if (resProd.error) throw resProd.error;
+        }
+
+        fecharModalEditarVenda();
+        await carregarTudo();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Venda Atualizada!',
+          text: 'Os dados da venda e o estoque foram recalculados com sucesso.',
+          timer: 1800,
+          showConfirmButton: false
+        });
+
+      } catch (err) {
+        console.error("Erro ao salvar edição de venda:", err);
+        Swal.fire('Erro ao Atualizar', err.message, 'error');
+      } finally {
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações`;
       }
     }
 
