@@ -1057,6 +1057,18 @@
                 <option value="">Todos os Clientes</option>
               </select>
 
+              <!-- Seletor de Ordenação (Padrão: Ordem Alfabética A - Z) -->
+              <select 
+                id="ordemRelatorioClienteSelect" 
+                onchange="renderizarRelatorioVendasPorCliente()" 
+                class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-700 focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="nome_asc" selected>Ordem Alfabética (A - Z)</option>
+                <option value="valor_desc">Maior Valor Comprado</option>
+                <option value="recente_desc">Última Compra (Recente)</option>
+                <option value="itens_desc">Maior Qtd de Itens</option>
+              </select>
+
               <!-- Botão Nova Venda Multi-Produtos -->
               <button 
                 onclick="abrirModalVendaMultipla()" 
@@ -4335,8 +4347,18 @@
         });
       }
 
-      // Ordena clientes por maior valor comprado (Top compradores no topo)
-      clientesArray.sort((a, b) => b.totalGasto - a.totalGasto);
+      // Ordenação dos clientes (Padrão: Ordem Alfabética A - Z conforme solicitado)
+      const ordemSel = document.getElementById('ordemRelatorioClienteSelect')?.value || 'nome_asc';
+      if (ordemSel === 'valor_desc') {
+        clientesArray.sort((a, b) => b.totalGasto - a.totalGasto);
+      } else if (ordemSel === 'recente_desc') {
+        clientesArray.sort((a, b) => (b.ultimaDataCompra || '').localeCompare(a.ultimaDataCompra || ''));
+      } else if (ordemSel === 'itens_desc') {
+        clientesArray.sort((a, b) => b.totalItens - a.totalItens);
+      } else {
+        // Padrão: Ordem Alfabética (A - Z)
+        clientesArray.sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
+      }
 
       // Atualiza KPIs globais do Relatório
       let somaClientes = clientesArray.length;
