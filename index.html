@@ -324,89 +324,185 @@
 
         <!-- ================= TAB: DASHBOARD (VISÃO GERAL COM GRÁFICOS) ================= -->
         <div id="tab-dashboard" class="tab-content space-y-6">
-          <!-- KPI Cards no Topo do Painel (Sequência Solicitada: 6 Cards) -->
+          <!-- KPI Cards no Topo do Painel (Sequência Solicitada: 6 Cards Executivos) -->
           <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
             <!-- 1. Valor do Investimento -->
             <div class="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Valor Investimento</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Valor Investimento</span>
+                  <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarIndicador('investimento')" title="Clique para ver detalhes">
+                    <i class="fa-solid fa-circle-question text-slate-400 group-hover:text-orange-600 text-xs transition"></i>
+                    <!-- Tooltip Hover Executivo -->
+                    <div class="pointer-events-none absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                      <p class="font-extrabold text-orange-400 flex items-center gap-1.5 mb-1 text-xs">
+                        <i class="fa-solid fa-receipt text-orange-400"></i> Valor do Investimento
+                      </p>
+                      <p class="text-slate-200">Total que você <b>tirou do bolso</b> para pagar os pedidos e notas fiscais à vista ou a prazo. Representa o custo dos produtos para abastecer o seu estoque.</p>
+                      <p class="text-[10px] text-orange-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para abrir explicação completa</p>
+                    </div>
+                  </div>
+                </div>
                 <div class="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-sm shadow-xs">
                   <i class="fa-solid fa-receipt"></i>
                 </div>
               </div>
               <div class="mt-2">
                 <p class="text-base sm:text-lg font-black text-slate-800 truncate" id="kpiEstoqueValor">R$ 0,00</p>
-                <p class="text-[10px] text-emerald-600 font-bold mt-0.5">Valor pago na nota</p>
+                <div class="flex flex-col gap-0.5 mt-0.5">
+                  <p class="text-[10px] text-emerald-600 font-bold">Valor pago na nota</p>
+                  <span class="text-[9.5px] font-bold text-slate-600 bg-slate-100 border border-slate-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit">Custo de mercadoria</span>
+                </div>
               </div>
             </div>
 
             <!-- 2. Total Recebido (Já Pago) -->
             <div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Total Recebido</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Total Recebido</span>
+                  <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarIndicador('recebido')" title="Clique para ver detalhes">
+                    <i class="fa-solid fa-circle-question text-emerald-400 group-hover:text-emerald-700 text-xs transition"></i>
+                    <!-- Tooltip Hover Executivo -->
+                    <div class="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                      <p class="font-extrabold text-emerald-400 flex items-center gap-1.5 mb-1 text-xs">
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i> Total Recebido (Caixa Real)
+                      </p>
+                      <p class="text-slate-200">Dinheiro real que <b>já entrou no seu bolso ou conta</b> (vendas à vista ou fiado já quitado). Mostra quanto do seu investimento você já recuperou na prática.</p>
+                      <p class="text-[10px] text-emerald-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para abrir explicação completa</p>
+                    </div>
+                  </div>
+                </div>
                 <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm shadow-xs">
                   <i class="fa-solid fa-circle-check"></i>
                 </div>
               </div>
               <div class="mt-2">
                 <p class="text-base sm:text-lg font-black text-emerald-600 truncate" id="kpiTotalRecebido">R$ 0,00</p>
-                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiRecebidoQtd">0 vendas quitadas</p>
+                <div class="flex flex-col gap-0.5 mt-0.5">
+                  <p class="text-[10px] text-slate-500 font-medium" id="kpiRecebidoQtd">0 vendas quitadas</p>
+                  <span id="kpiRecebidoPct" class="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit">0% recuperado</span>
+                </div>
               </div>
             </div>
 
             <!-- 3. Total a Receber (Pendente) -->
             <div class="bg-white p-4 rounded-2xl border border-amber-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Total a Receber</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Total a Receber</span>
+                  <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarIndicador('aReceber')" title="Clique para ver detalhes">
+                    <i class="fa-solid fa-circle-question text-amber-400 group-hover:text-amber-700 text-xs transition"></i>
+                    <!-- Tooltip Hover Executivo -->
+                    <div class="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                      <p class="font-extrabold text-amber-400 flex items-center gap-1.5 mb-1 text-xs">
+                        <i class="fa-solid fa-clock text-amber-400"></i> Total a Receber (Fiado / Pendente)
+                      </p>
+                      <p class="text-slate-200">Vendas que você já entregou, mas que os clientes <b>ainda não pagaram</b>. Mostra quanto dinheiro do seu negócio ainda está na rua e precisa ser cobrado.</p>
+                      <p class="text-[10px] text-amber-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para abrir explicação completa</p>
+                    </div>
+                  </div>
+                </div>
                 <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-sm shadow-xs">
                   <i class="fa-solid fa-clock"></i>
                 </div>
               </div>
               <div class="mt-2">
                 <p class="text-base sm:text-lg font-black text-amber-600 truncate" id="kpiTotalAReceber">R$ 0,00</p>
-                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiAReceberQtd">0 vendas pendentes</p>
+                <div class="flex flex-col gap-0.5 mt-0.5">
+                  <p class="text-[10px] text-slate-500 font-medium" id="kpiAReceberQtd">0 vendas pendentes</p>
+                  <span id="kpiAReceberPct" class="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit">0% a receber</span>
+                </div>
               </div>
             </div>
 
             <!-- 4. Total Faturado -->
             <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Faturado</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Faturado</span>
+                  <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarIndicador('faturado')" title="Clique para ver detalhes">
+                    <i class="fa-solid fa-circle-question text-blue-400 group-hover:text-blue-700 text-xs transition"></i>
+                    <!-- Tooltip Hover Executivo -->
+                    <div class="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                      <p class="font-extrabold text-blue-400 flex items-center gap-1.5 mb-1 text-xs">
+                        <i class="fa-solid fa-sack-dollar text-blue-400"></i> Total Faturado (Volume Global)
+                      </p>
+                      <p class="text-slate-200">Soma bruta de <b>todas as vendas</b> realizadas (tanto as já pagas quanto as pendentes). Mede a força comercial total do seu negócio.</p>
+                      <p class="text-[10px] text-blue-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para abrir explicação completa</p>
+                    </div>
+                  </div>
+                </div>
                 <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm shadow-xs">
                   <i class="fa-solid fa-sack-dollar"></i>
                 </div>
               </div>
               <div class="mt-2">
                 <p class="text-base sm:text-lg font-black text-slate-800 truncate" id="kpiTotalVendas">R$ 0,00</p>
-                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiVendasQtd">0 vendas</p>
+                <div class="flex flex-col gap-0.5 mt-0.5">
+                  <p class="text-[10px] text-slate-500 font-medium" id="kpiVendasQtd">0 vendas</p>
+                  <span id="kpiTicketMedio" class="text-[9.5px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit">Ticket Médio: R$ 0,00</span>
+                </div>
               </div>
             </div>
 
             <!-- 5. Lucro Estimado -->
             <div class="bg-white p-4 rounded-2xl border border-purple-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Lucro Estimado</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Lucro Estimado</span>
+                  <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarIndicador('lucro')" title="Clique para ver detalhes">
+                    <i class="fa-solid fa-circle-question text-purple-400 group-hover:text-purple-700 text-xs transition"></i>
+                    <!-- Tooltip Hover Executivo -->
+                    <div class="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                      <p class="font-extrabold text-purple-400 flex items-center gap-1.5 mb-1 text-xs">
+                        <i class="fa-solid fa-chart-line text-purple-400"></i> Lucro Estimado (Ganho Líquido)
+                      </p>
+                      <p class="text-slate-200">Dinheiro líquido que <b>sobra limpo para você</b> após abater o valor de custo pago na nota de cada produto vendido. A margem indica a porcentagem de lucro de cada venda.</p>
+                      <p class="text-[10px] text-purple-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para abrir explicação completa</p>
+                    </div>
+                  </div>
+                </div>
                 <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-sm shadow-xs">
                   <i class="fa-solid fa-chart-line"></i>
                 </div>
               </div>
               <div class="mt-2">
                 <p class="text-base sm:text-lg font-black text-purple-600 truncate" id="kpiLucroTotal">R$ 0,00</p>
-                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiMargemMedia">Margem: 0%</p>
+                <div class="flex flex-col gap-0.5 mt-0.5">
+                  <p class="text-[10px] text-slate-500 font-medium" id="kpiMargemMedia">Margem: 0%</p>
+                  <span id="kpiRentabilidadeTag" class="text-[9.5px] font-bold text-purple-700 bg-purple-50 border border-purple-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit">Rentabilidade</span>
+                </div>
               </div>
             </div>
 
             <!-- 6. Total em Estoque -->
             <div class="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total em Estoque</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total em Estoque</span>
+                  <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarIndicador('estoque')" title="Clique para ver detalhes">
+                    <i class="fa-solid fa-circle-question text-orange-400 group-hover:text-orange-700 text-xs transition"></i>
+                    <!-- Tooltip Hover Executivo -->
+                    <div class="pointer-events-none absolute right-0 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                      <p class="font-extrabold text-orange-400 flex items-center gap-1.5 mb-1 text-xs">
+                        <i class="fa-solid fa-cubes text-orange-400"></i> Total em Estoque (Mercadoria)
+                      </p>
+                      <p class="text-slate-200">Quantidade de <b>unidades físicas</b> que você possui em mãos prontas para pronta entrega imediata, e quantos tipos de produtos estão no seu catálogo.</p>
+                      <p class="text-[10px] text-orange-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para abrir explicação completa</p>
+                    </div>
+                  </div>
+                </div>
                 <div class="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-sm shadow-xs">
                   <i class="fa-solid fa-cubes"></i>
                 </div>
               </div>
               <div class="mt-2">
                 <p class="text-lg sm:text-xl font-black text-slate-800 truncate" id="kpiEstoqueQtd">0</p>
-                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiEstoqueItens">0 produtos</p>
+                <div class="flex flex-col gap-0.5 mt-0.5">
+                  <p class="text-[10px] text-slate-500 font-medium" id="kpiEstoqueItens">0 produtos cadastrados</p>
+                  <span id="kpiEstoqueProntaEntrega" class="text-[9.5px] font-bold text-orange-700 bg-orange-50 border border-orange-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit">Pronta entrega</span>
+                </div>
               </div>
             </div>
           </div>
@@ -2079,6 +2175,91 @@
       }
     }
 
+    // Explicação Executiva Didática dos Indicadores (Modal e Acessibilidade)
+    function explicarIndicador(tipo) {
+      const explicacoes = {
+        investimento: {
+          titulo: 'Valor do Investimento',
+          icone: 'fa-receipt',
+          cor: '#ea580c',
+          oQueE: 'É o valor total pago por você nas compras e notas fiscais para adquirir os produtos (preço de custo).',
+          paraQueServe: 'Representa o dinheiro que saiu do seu bolso para montar seu estoque e atender seus clientes.',
+          dica: '💡 <b>Dica Executiva:</b> Este é o valor mínimo que seu caixa precisa recuperar para a operação empatar (ponto de equilíbrio). Cada centavo recebido acima disso contribui para o seu lucro real.'
+        },
+        recebido: {
+          titulo: 'Total Recebido (Caixa Real)',
+          icone: 'fa-circle-check',
+          cor: '#16a34a',
+          oQueE: 'É o dinheiro real que já entrou fisicamente no seu caixa, PIX ou conta bancária (vendas à vista e fiados já quitados).',
+          paraQueServe: 'Mostra quanto do seu investimento original você já recuperou em dinheiro vivo.',
+          dica: '💡 <b>Dica Executiva:</b> O indicador <b>% recuperado</b> abaixo do valor mostra seu progresso de recuperação. Se passar de 100%, você já pagou a nota fiscal e agora só está colhendo lucro puro!'
+        },
+        aReceber: {
+          titulo: 'Total a Receber (Vendas Pendentes / Fiado)',
+          icone: 'fa-clock',
+          cor: '#d97706',
+          oQueE: 'É a soma das vendas já entregues aos clientes, mas cujo pagamento ainda está em aberto (status "Pendente").',
+          paraQueServe: 'Indica quanto dinheiro do seu negócio ainda está na rua e precisa de cobrança ativa.',
+          dica: '💡 <b>Dica Executiva:</b> A etiqueta <b>% a receber</b> indica o risco de crédito. Se este percentual estiver acima de 50%, foque em cobrar os pendentes antes de financiar novas compras grandes.'
+        },
+        faturado: {
+          titulo: 'Total Faturado (Volume Global de Vendas)',
+          icone: 'fa-sack-dollar',
+          cor: '#2563eb',
+          oQueE: 'É a soma bruta de todas as vendas que você registrou no sistema (Total Recebido + Total a Receber).',
+          paraQueServe: 'Mede a força de vendas total e o tamanho da sua operação comercial.',
+          dica: '💡 <b>Dica Executiva:</b> Observe o <b>Ticket Médio</b> (média gasta por venda). Para faturar mais, ofereça combos, brindes e kits para elevar o gasto médio por cliente.'
+        },
+        lucro: {
+          titulo: 'Lucro Estimado & Margem Média',
+          icone: 'fa-chart-line',
+          cor: '#9333ea',
+          oQueE: 'É o ganho líquido que sobra para você, subtraindo o custo pago na nota fiscal de cada item vendido.',
+          paraQueServe: 'Mede a rentabilidade real do seu trabalho e a eficiência das suas promoções.',
+          dica: '💡 <b>Dica Executiva:</b> A <b>Margem Média</b> de ~40% a 45% é excelente no segmento de cosméticos e perfumaria. Margens acima de 35% garantem um negócio sustentável e altamente lucrativo.'
+        },
+        estoque: {
+          titulo: 'Total em Estoque (Mercadoria Pronta)',
+          icone: 'fa-cubes',
+          cor: '#ea580c',
+          oQueE: 'Mostra a quantidade de unidades físicas estocadas com você prontas para pronta entrega imediata.',
+          paraQueServe: 'Garante que você nunca perca uma venda por falta de produto e ajuda a identificar itens parados.',
+          dica: '💡 <b>Dica Executiva:</b> "Estoque parado é dinheiro dormindo". Use as promoções de revista para queimar produtos com muitas semanas sem saída e transformar estoque em caixa rápido.'
+        }
+      };
+
+      const info = explicacoes[tipo];
+      if (!info) return;
+
+      Swal.fire({
+        title: `<div class="flex items-center justify-center gap-2 text-base font-extrabold" style="color: ${info.cor};">
+                  <i class="fa-solid ${info.icone}"></i> ${info.titulo}
+                </div>`,
+        html: `
+          <div class="text-left text-xs space-y-2.5 pt-2 text-slate-700 leading-relaxed">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <p class="font-bold text-slate-900 mb-0.5 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-info text-blue-500"></i> O que significa este número?
+              </p>
+              <p class="text-slate-600">${info.oQueE}</p>
+            </div>
+            <div class="p-3 rounded-xl bg-orange-50/70 border border-orange-200">
+              <p class="font-bold text-orange-950 mb-0.5 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-bullseye text-orange-600"></i> Para que serve no seu dia a dia?
+              </p>
+              <p class="text-orange-900">${info.paraQueServe}</p>
+            </div>
+            <div class="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-950 text-[11px]">
+              ${info.dica}
+            </div>
+          </div>
+        `,
+        confirmButtonColor: info.cor,
+        confirmButtonText: 'Entendi, fechar',
+        showCloseButton: true
+      });
+    }
+
     // Renderizar KPIs, Top Vendas e Estoque Baixo do Dashboard
     function renderizarDashboard() {
       let totalEstoqueQtd = 0;
@@ -2128,30 +2309,66 @@
       if (elRec) elRec.textContent = formataBRL(totalRecebidoValor);
       const elRecQtd = document.getElementById('kpiRecebidoQtd');
       if (elRecQtd) elRecQtd.textContent = `${totalRecebidoQtd} ${totalRecebidoQtd === 1 ? 'venda quitada' : 'vendas quitadas'}`;
+      const elRecPct = document.getElementById('kpiRecebidoPct');
+      if (elRecPct) {
+        const pctRecup = totalInvestimentoPago > 0 ? ((totalRecebidoValor / totalInvestimentoPago) * 100).toFixed(1) : 0;
+        elRecPct.textContent = `${pctRecup}% recuperado`;
+        elRecPct.title = `Você já recuperou ${formataBRL(totalRecebidoValor)} de ${formataBRL(totalInvestimentoPago)} investidos`;
+      }
 
       // 3. Total a Receber (Valores que ainda não foram pagos)
       const elPend = document.getElementById('kpiTotalAReceber');
       if (elPend) elPend.textContent = formataBRL(totalAReceberValor);
       const elPendQtd = document.getElementById('kpiAReceberQtd');
       if (elPendQtd) elPendQtd.textContent = `${totalAReceberQtd} ${totalAReceberQtd === 1 ? 'venda pendente' : 'vendas pendentes'}`;
+      const elPendPct = document.getElementById('kpiAReceberPct');
+      if (elPendPct) {
+        const pctPend = totalVendidoValor > 0 ? ((totalAReceberValor / totalVendidoValor) * 100).toFixed(1) : 0;
+        elPendPct.textContent = `${pctPend}% a receber`;
+        elPendPct.title = `${pctPend}% do seu faturamento ainda está pendente com clientes`;
+      }
 
       // 4. Total Faturado
       const elFat = document.getElementById('kpiTotalVendas');
       if (elFat) elFat.textContent = formataBRL(totalVendidoValor);
       const elFatQtd = document.getElementById('kpiVendasQtd');
       if (elFatQtd) elFatQtd.textContent = `${vendasCache.length} vendas registradas`;
+      const elTicket = document.getElementById('kpiTicketMedio');
+      if (elTicket) {
+        const ticketMedio = vendasCache.length > 0 ? (totalVendidoValor / vendasCache.length) : 0;
+        elTicket.textContent = `Ticket Médio: ${formataBRL(ticketMedio)}`;
+        elTicket.title = `Cada venda tem um valor médio de ${formataBRL(ticketMedio)}`;
+      }
 
       // 5. Lucro Estimado
       const elLuc = document.getElementById('kpiLucroTotal');
       if (elLuc) elLuc.textContent = formataBRL(totalLucro);
       const elMargem = document.getElementById('kpiMargemMedia');
-      if (elMargem) elMargem.textContent = `Margem: ${margemMedia}%`;
+      if (elMargem) elMargem.textContent = `Margem média: ${margemMedia}%`;
+      const elLucTag = document.getElementById('kpiRentabilidadeTag');
+      if (elLucTag) {
+        const margemNum = parseFloat(margemMedia);
+        if (margemNum >= 40) {
+          elLucTag.textContent = 'Alta rentabilidade';
+          elLucTag.className = 'text-[9.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit';
+        } else if (margemNum >= 25) {
+          elLucTag.textContent = 'Margem saudável';
+          elLucTag.className = 'text-[9.5px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit';
+        } else {
+          elLucTag.textContent = 'Margem de giro';
+          elLucTag.className = 'text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit';
+        }
+      }
 
       // 6. Total em Estoque
       const elEst = document.getElementById('kpiEstoqueQtd');
       if (elEst) elEst.textContent = totalEstoqueQtd;
       const elEstItens = document.getElementById('kpiEstoqueItens');
       if (elEstItens) elEstItens.textContent = `${produtosCache.length} produtos cadastrados`;
+      const elEstPE = document.getElementById('kpiEstoqueProntaEntrega');
+      if (elEstPE) {
+        elEstPE.textContent = totalEstoqueQtd > 0 ? `${totalEstoqueQtd} un pronta entrega` : 'Estoque zerado';
+      }
 
       document.getElementById('badgeEstoque').textContent = totalEstoqueQtd;
       document.getElementById('badgeClientes').textContent = clientesCache.length;
