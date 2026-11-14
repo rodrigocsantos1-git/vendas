@@ -516,7 +516,20 @@
                   <div class="flex items-center gap-2">
                     <i class="fa-solid fa-chart-line text-orange-600 text-lg"></i>
                     <div>
-                      <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Volume de Vendas por Dia</h3>
+                      <div class="flex items-center gap-1.5">
+                        <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Volume de Vendas por Dia</h3>
+                        <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarGrafico('volumeDia')" title="Clique para ver cálculo e regras">
+                          <i class="fa-solid fa-circle-question text-slate-400 group-hover:text-orange-600 text-xs transition"></i>
+                          <!-- Tooltip Hover -->
+                          <div class="pointer-events-none absolute left-0 top-full mt-1.5 hidden group-hover:block w-72 sm:w-80 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                            <p class="font-extrabold text-orange-400 flex items-center gap-1.5 mb-1 text-xs">
+                              <i class="fa-solid fa-chart-line text-orange-400"></i> Volume de Vendas por Dia
+                            </p>
+                            <p class="text-slate-200">Soma de todas as <b>unidades de produtos vendidas em cada data</b>. Mostra quais dias da semana têm maior volume de vendas.</p>
+                            <p class="text-[10px] text-orange-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para ver fórmula de cálculo e regras</p>
+                          </div>
+                        </div>
+                      </div>
                       <p class="text-[11px] text-slate-500">Quantidade de itens vendidos por data</p>
                     </div>
                   </div>
@@ -538,7 +551,20 @@
                   <div class="flex items-center gap-2">
                     <i class="fa-solid fa-chart-column text-orange-600 text-lg"></i>
                     <div>
-                      <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Comparativo Financeiro Global</h3>
+                      <div class="flex items-center gap-1.5">
+                        <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Comparativo Financeiro Global</h3>
+                        <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarGrafico('comparativo')" title="Clique para ver cálculo e regras">
+                          <i class="fa-solid fa-circle-question text-slate-400 group-hover:text-emerald-600 text-xs transition"></i>
+                          <!-- Tooltip Hover -->
+                          <div class="pointer-events-none absolute right-0 sm:left-0 top-full mt-1.5 hidden group-hover:block w-72 sm:w-80 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                            <p class="font-extrabold text-emerald-400 flex items-center gap-1.5 mb-1 text-xs">
+                              <i class="fa-solid fa-chart-column text-emerald-400"></i> Comparativo Financeiro
+                            </p>
+                            <p class="text-slate-200">Compara os 3 pilares financeiros: <b>Custo Real (Quanto Paguei)</b> vs <b>Faturamento Bruto</b> vs <b>Lucro Realizado</b>.</p>
+                            <p class="text-[10px] text-emerald-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para ver fórmula de cálculo e regras</p>
+                          </div>
+                        </div>
+                      </div>
                       <p class="text-[11px] text-slate-500">Visão consolidada de rentabilidade</p>
                     </div>
                   </div>
@@ -563,7 +589,20 @@
                   <div class="flex items-center gap-2">
                     <i class="fa-solid fa-trophy text-amber-500 text-lg"></i>
                     <div>
-                      <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Top Vendas (Mais Vendidos)</h3>
+                      <div class="flex items-center gap-1.5">
+                        <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Top Vendas (Mais Vendidos)</h3>
+                        <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarGrafico('topVendas')" title="Clique para ver cálculo e regras">
+                          <i class="fa-solid fa-circle-question text-slate-400 group-hover:text-amber-600 text-xs transition"></i>
+                          <!-- Tooltip Hover -->
+                          <div class="pointer-events-none absolute left-0 top-full mt-1.5 hidden group-hover:block w-72 sm:w-80 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                            <p class="font-extrabold text-amber-400 flex items-center gap-1.5 mb-1 text-xs">
+                              <i class="fa-solid fa-trophy text-amber-400"></i> Ranking Top Vendas
+                            </p>
+                            <p class="text-slate-200">Classifica os produtos campeões por quantidade vendida, receita total gerada e margem de lucro por SKU.</p>
+                            <p class="text-[10px] text-amber-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para ver fórmula de cálculo e regras</p>
+                          </div>
+                        </div>
+                      </div>
                       <p class="text-[11px] text-slate-500">Ranking dos produtos mais vendidos por volume e faturamento</p>
                     </div>
                   </div>
@@ -582,7 +621,20 @@
                   <div class="flex items-center gap-2">
                     <i class="fa-solid fa-chart-pie text-amber-500 text-lg"></i>
                     <div>
-                      <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Distribuição do Investimento</h3>
+                      <div class="flex items-center gap-1.5">
+                        <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Distribuição do Investimento</h3>
+                        <div class="relative group cursor-pointer inline-flex items-center" onclick="explicarGrafico('categorias')" title="Clique para ver cálculo e regras">
+                          <i class="fa-solid fa-circle-question text-slate-400 group-hover:text-purple-600 text-xs transition"></i>
+                          <!-- Tooltip Hover -->
+                          <div class="pointer-events-none absolute right-0 sm:left-0 top-full mt-1.5 hidden group-hover:block w-72 sm:w-80 p-3 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] rounded-xl shadow-2xl border border-slate-700/80 z-50 text-left normal-case leading-relaxed">
+                            <p class="font-extrabold text-purple-400 flex items-center gap-1.5 mb-1 text-xs">
+                              <i class="fa-solid fa-chart-pie text-purple-400"></i> Investimento por Categoria
+                            </p>
+                            <p class="text-slate-200">Divide o seu capital de compras entre as categorias (Perfumaria, Corpo e Banho, Cabelos, etc.) em R$ e %.</p>
+                            <p class="text-[10px] text-purple-300 mt-1.5 font-semibold flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-[9px]"></i> Clique para ver fórmula de cálculo e regras</p>
+                          </div>
+                        </div>
+                      </div>
                       <p class="text-[11px] text-slate-500">Investimento pago por categoria de produto</p>
                     </div>
                   </div>
@@ -2256,6 +2308,109 @@
         `,
         confirmButtonColor: info.cor,
         confirmButtonText: 'Entendi, fechar',
+        showCloseButton: true
+      });
+    }
+
+    // Explicação Executiva dos Gráficos (Cálculos e Regras de Negócio)
+    function explicarGrafico(tipo) {
+      const graficos = {
+        volumeDia: {
+          titulo: 'Volume de Vendas por Dia',
+          icone: 'fa-chart-line',
+          cor: '#ea580c',
+          oQueMostra: 'Exibe o total de <b>unidades de produtos vendidas em cada data</b> (vendas individuais ou multi-produtos).',
+          comoCalcula: 'Soma todas as quantidades de itens vendidos com a mesma data de venda:<br>' +
+                       '<code class="block mt-1.5 p-2 bg-slate-100 rounded-lg text-slate-800 font-mono text-[10.5px]">Volume do Dia = Σ (Quantidade de unidades vendidas na data)</code>',
+          regras: '• Cada coluna no gráfico representa um dia em que houve vendas.<br>' +
+                  '• Em cima de cada barra é exibido o número exato de unidades (ex: 2 un, 4 un, 22 un).<br>' +
+                  '• Ao passar o mouse na coluna, você vê também o <b>Faturamento Total (R$)</b> arrecadado naquele dia.<br>' +
+                  '• No rodapé do gráfico, você acompanha: <b>Total de Itens Vendidos</b>, <b>Faturamento do Período</b> e <b>Dias com Vendas</b>.',
+          dicaExecutiva: '💡 <b>Dica de Negócio:</b> Analise os picos de venda para entender os dias mais fortes (ex: quintas, sextas ou datas de pagamento) e concentre suas divulgações e novidades nesses momentos.'
+        },
+        comparativo: {
+          titulo: 'Comparativo Financeiro Global',
+          icone: 'fa-chart-column',
+          cor: '#16a34a',
+          oQueMostra: 'Visão consolidada da rentabilidade do seu negócio comparando <b>Custo Real</b>, <b>Faturamento Bruto</b> e <b>Lucro Realizado</b>.',
+          comoCalcula: '<div class="space-y-1 font-mono text-[10.5px] bg-slate-100 p-2.5 rounded-lg text-slate-800">' +
+                       '<div>🟠 <b>Quanto Paguei</b> = Σ (Qtd Vendida × Custo Unitário na Nota)</div>' +
+                       '<div>🟢 <b>Total Faturado</b> = Σ (Valor Total Cobrado nas Vendas)</div>' +
+                       '<div>🟣 <b>Lucro Realizado</b> = Total Faturado − Quanto Paguei</div>' +
+                       '<div class="pt-1 border-t border-slate-200"><b>Margem Realizada (%)</b> = (Lucro Realizado ÷ Total Faturado) × 100</div>' +
+                       '</div>',
+          regras: '• <b>Quanto Paguei (Custo):</b> Reflete exatamente o valor unitário de compra vindo da Nota Fiscal (PDF) ou cadastro.<br>' +
+                  '• <b>Total Faturado:</b> É o valor real acordado na venda com os clientes.<br>' +
+                  '• <b>Lucro Realizado:</b> É o ganho limpo em reais que sobra após abater os custos pagos.<br>' +
+                  '• O "Valor Revista (Tabela)" foi removido deste gráfico a seu pedido para focar 100% no dinheiro real da operação.',
+          dicaExecutiva: '💡 <b>Dica de Negócio:</b> Para um negócio saudável de revenda, a barra verde (Faturado) deve ser no mínimo 60% a 70% maior que a barra laranja (Custo), garantindo lucro para reinvestir.'
+        },
+        topVendas: {
+          titulo: 'Top Vendas (Ranking dos Mais Vendidos)',
+          icone: 'fa-trophy',
+          cor: '#d97706',
+          oQueMostra: 'Ranking dos produtos que mais venderam em quantidade e que mais geraram faturamento para você.',
+          comoCalcula: 'Para cada SKU de produto, o sistema calcula:<br>' +
+                       '<div class="font-mono text-[10.5px] bg-slate-100 p-2.5 rounded-lg text-slate-800 mt-1 space-y-1">' +
+                       '<div>• <b>Qtd Total Vendida</b> = Σ Unidades vendidas do produto</div>' +
+                       '<div>• <b>Faturamento do SKU</b> = Σ (Preço de venda × Qtd vendida)</div>' +
+                       '<div>• <b>Lucro do Produto</b> = Faturamento − (Custo da nota × Qtd vendida)</div>' +
+                       '</div>',
+          regras: '• Os produtos são ordenados do mais vendido para o menos vendido.<br>' +
+                  '• Inclui foto do produto, código SKU, faturamento gerado e margem obtida naquele item específico.<br>' +
+                  '• Produtos sem nenhuma venda não entram na lista.',
+          dicaExecutiva: '💡 <b>Dica de Negócio:</b> Aplique a "Regra 80/20": geralmente poucos produtos trazem a maior parte do lucro. Nunca deixe os itens do Top 5 ficarem com estoque zerado!'
+        },
+        categorias: {
+          titulo: 'Distribuição do Investimento por Categoria',
+          icone: 'fa-chart-pie',
+          cor: '#8b5cf6',
+          oQueMostra: 'Gráfico em formato de rosca dividindo onde o seu capital de compras está alocado por categoria (Perfumaria, Corpo e Banho, Cabelos, etc.).',
+          comoCalcula: '<code class="block p-2.5 bg-slate-100 rounded-lg text-slate-800 font-mono text-[10.5px] space-y-1">' +
+                       '<div>Investimento na Categoria = Σ (Qtd Comprada × Custo Unitário Pago)</div>' +
+                       '<div>% da Categoria = (Investimento na Categoria ÷ Investimento Global) × 100</div>' +
+                       '</code>',
+          regras: '• Cada fatia colorida representa uma categoria de produtos.<br>' +
+                  '• A soma de todas as fatias totaliza 100% do valor de compras em estoque.<br>' +
+                  '• Na lista abaixo do gráfico, você vê o valor exato em Reais (R$) e o percentual (%) de cada categoria.',
+          dicaExecutiva: '💡 <b>Dica de Negócio:</b> Evite concentrar mais de 70% do seu dinheiro em uma única categoria de alto custo (ex: apenas perfumes caros). Mantenha itens de giro rápido (como sabonetes e desodorantes) para garantir vendas diárias.'
+        }
+      };
+
+      const info = graficos[tipo];
+      if (!info) return;
+
+      Swal.fire({
+        title: `<div class="flex items-center justify-center gap-2 text-base font-extrabold" style="color: ${info.cor};">
+                  <i class="fa-solid ${info.icone}"></i> ${info.titulo}
+                </div>`,
+        html: `
+          <div class="text-left text-xs space-y-2.5 pt-2 text-slate-700 leading-relaxed max-h-[75vh] overflow-y-auto pr-1">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <p class="font-bold text-slate-900 mb-0.5 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-eye text-blue-500"></i> O que este gráfico mostra?
+              </p>
+              <p class="text-slate-600">${info.oQueMostra}</p>
+            </div>
+            <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200">
+              <p class="font-bold text-blue-950 mb-0.5 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-calculator text-blue-600"></i> Como funciona o cálculo?
+              </p>
+              <div class="text-blue-950 mt-1">${info.comoCalcula}</div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <p class="font-bold text-slate-900 mb-0.5 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-scale-balanced text-emerald-600"></i> Regras de Negócio Aplicadas
+              </p>
+              <div class="text-slate-600 space-y-1 mt-1">${info.regras}</div>
+            </div>
+            <div class="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-950 text-[11px]">
+              ${info.dicaExecutiva}
+            </div>
+          </div>
+        `,
+        confirmButtonColor: info.cor,
+        confirmButtonText: 'Entendi o cálculo e as regras',
         showCloseButton: true
       });
     }
