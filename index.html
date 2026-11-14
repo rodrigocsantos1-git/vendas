@@ -397,14 +397,14 @@
                       <p class="text-[11px] text-slate-500">Visão consolidada de rentabilidade</p>
                     </div>
                   </div>
-                  <span class="text-[11px] text-slate-400 font-semibold">Tabela vs Venda</span>
+                  <span class="text-[11px] text-slate-400 font-semibold">Custo vs Venda</span>
                 </div>
                 <div class="h-64 sm:h-72 relative">
                   <canvas id="chartComparativoFinanceiro"></canvas>
                 </div>
               </div>
-              <!-- Resumo numérico abaixo do gráfico -->
-              <div id="resumoComparativoCards" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-3 border-t border-slate-100">
+              <!-- Resumo numérico abaixo do gráfico (3 pilares: Custo, Faturamento, Lucro) -->
+              <div id="resumoComparativoCards" class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100">
               </div>
             </div>
           </div>
@@ -1724,11 +1724,14 @@
     // Renderizar KPIs, Top Vendas e Estoque Baixo do Dashboard
     function renderizarDashboard() {
       let totalEstoqueQtd = 0;
-      let totalEstoqueCusto = 0;
+      let totalInvestimentoPago = 0; // Valor total pago/investido nas notas fiscais (Quanto Paguei)
       produtosCache.forEach(p => {
-        const qtd = p.quantidade_estoque || 0;
-        totalEstoqueQtd += qtd;
-        totalEstoqueCusto += qtd * (p.vl_unit_pago || 0);
+        const qtdEstoque = parseInt(p.quantidade_estoque) || 0;
+        totalEstoqueQtd += qtdEstoque;
+        const qtdComprada = (p.quantidade_comprada && p.quantidade_comprada > 0)
+          ? parseInt(p.quantidade_comprada)
+          : (qtdEstoque + (parseInt(p.quantidade_vendida) || 0));
+        totalInvestimentoPago += qtdComprada * (parseFloat(p.vl_unit_pago) || 0);
       });
 
       let totalVendidoValor = 0;
@@ -1742,7 +1745,7 @@
 
       document.getElementById('kpiEstoqueQtd').textContent = totalEstoqueQtd;
       document.getElementById('kpiEstoqueItens').textContent = `${produtosCache.length} produtos cadastrados`;
-      document.getElementById('kpiEstoqueValor').textContent = formataBRL(totalEstoqueCusto);
+      document.getElementById('kpiEstoqueValor').textContent = formataBRL(totalInvestimentoPago);
       document.getElementById('kpiTotalVendas').textContent = formataBRL(totalVendidoValor);
       document.getElementById('kpiVendasQtd').textContent = `${vendasCache.length} vendas registradas`;
       document.getElementById('kpiLucroTotal').textContent = formataBRL(totalLucro);
@@ -2036,11 +2039,12 @@
     function renderizarGraficosDashboard() {
       // 1. Gráfico de Comparativo Financeiro
       let totalPago = 0;
-      let totalRevista = 0;
       produtosCache.forEach(p => {
-        const qtdComprada = p.quantidade_comprada || 0;
-        totalPago += qtdComprada * (p.vl_unit_pago || 0);
-        totalRevista += qtdComprada * (p.preco_revista || p.vl_unit_sugerido || 0);
+        const qtdEstoque = parseInt(p.quantidade_estoque) || 0;
+        const qtdComprada = (p.quantidade_comprada && p.quantidade_comprada > 0)
+          ? parseInt(p.quantidade_comprada)
+          : (qtdEstoque + (parseInt(p.quantidade_vendida) || 0));
+        totalPago += qtdComprada * (parseFloat(p.vl_unit_pago) || 0);
       });
 
       let totalFaturado = 0;
@@ -2050,12 +2054,11 @@
         totalLucro += parseFloat(v.lucro_total) || 0;
       });
 
-      // Renderiza resumo numérico abaixo do gráfico de barras
+      // Renderiza resumo numérico abaixo do gráfico de barras (3 pilares: Custo, Faturamento e Lucro)
       const divResumoComp = document.getElementById('resumoComparativoCards');
       if (divResumoComp) {
         const itensComp = [
-          { label: 'Quanto Paguei', valor: totalPago, cor: 'text-orange-600', bg: 'bg-orange-50 border-orange-200' },
-          { label: 'Valor Revista', valor: totalRevista, cor: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
+          { label: 'Quanto Paguei (Custo)', valor: totalPago, cor: 'text-orange-600', bg: 'bg-orange-50 border-orange-200' },
           { label: 'Total Faturado', valor: totalFaturado, cor: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
           { label: 'Lucro Realizado', valor: totalLucro, cor: 'text-purple-600', bg: 'bg-purple-50 border-purple-200' }
         ];
@@ -2192,7 +2195,7 @@
           chartFinanceiroInstance.destroy();
         }
 
-        const coresTextoBarras = ['#c2410c', '#1d4ed8', '#047857', '#7e22ce'];
+        const coresTextoBarras = ['#c2410c', '#047857', '#7e22ce'];
 
         // Plugin para desenhar os valores em R$ no topo de cada barra
         const barValuesPlugin = {
@@ -2218,19 +2221,17 @@
           type: 'bar',
           plugins: [barValuesPlugin],
           data: {
-            labels: ['Quanto Paguei (Custo)', 'Valor Revista (Tabela)', 'Total Faturado', 'Lucro Realizado'],
+            labels: ['Quanto Paguei (Custo)', 'Total Faturado', 'Lucro Realizado'],
             datasets: [{
               label: 'Valor (R$)',
-              data: [totalPago, totalRevista, totalFaturado, totalLucro],
+              data: [totalPago, totalFaturado, totalLucro],
               backgroundColor: [
                 'rgba(234, 88, 12, 0.85)',   // Laranja Custo
-                'rgba(59, 130, 246, 0.85)',  // Azul Revista
                 'rgba(16, 185, 129, 0.85)',  // Verde Faturamento
                 'rgba(168, 85, 247, 0.85)'   // Roxo Lucro
               ],
               borderColor: [
                 '#ea580c',
-                '#3b82f6',
                 '#10b981',
                 '#a855f7'
               ],
@@ -2278,7 +2279,11 @@
       const categoriasMap = {};
       produtosCache.forEach(p => {
         const cat = p.categoria || 'Outros';
-        const custoTotalItem = (p.quantidade_comprada || 0) * (p.vl_unit_pago || 0);
+        const qtdEstoque = parseInt(p.quantidade_estoque) || 0;
+        const qtdComprada = (p.quantidade_comprada && p.quantidade_comprada > 0)
+          ? parseInt(p.quantidade_comprada)
+          : (qtdEstoque + (parseInt(p.quantidade_vendida) || 0));
+        const custoTotalItem = qtdComprada * (parseFloat(p.vl_unit_pago) || 0);
         categoriasMap[cat] = (categoriasMap[cat] || 0) + custoTotalItem;
       });
 
