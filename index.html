@@ -226,6 +226,15 @@
           <span id="badgeClientes" class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-extrabold">0</span>
         </button>
 
+        <!-- NOVO MENU DEDICADO: Relatório de Vendas por Cliente -->
+        <button onclick="mudarAba('vendas-cliente'); alternarSidebarMobile(false);" id="tabBtn-vendas-cliente" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-orange-600 hover:bg-orange-50">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-file-invoice-dollar w-4 text-center text-orange-600"></i>
+            <span>Vendas por Cliente</span>
+          </div>
+          <span id="badgeVendasCliente" class="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-extrabold">0</span>
+        </button>
+
         <!-- NOVO MENU DEDICADO: Aniversariantes do Mês -->
         <button onclick="mudarAba('aniversariantes'); alternarSidebarMobile(false);" id="tabBtn-aniversariantes" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition text-slate-600 hover:text-pink-600 hover:bg-pink-50">
           <div class="flex items-center gap-2.5">
@@ -812,6 +821,79 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB: RELATÓRIO DE VENDAS POR CLIENTE ================= -->
+      <div id="tab-vendas-cliente" class="tab-content hidden space-y-6">
+        <!-- Banner e Filtros -->
+        <div class="bg-white rounded-3xl border border-orange-100 p-5 sm:p-6 shadow-sm space-y-4">
+          <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-bold mb-2">
+                <i class="fa-solid fa-file-invoice-dollar text-orange-600"></i> Relatório Comercial Detalhado
+              </div>
+              <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Vendas por Cliente</h2>
+              <p class="text-xs text-slate-500 mt-1">Consolidado com datas de compra, itens adquiridos, quantidades e valores por cliente.</p>
+            </div>
+
+            <!-- Controles de Filtro e Exportação -->
+            <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+              <!-- Busca rápida por nome do cliente ou produto -->
+              <div class="relative flex-1 sm:w-64">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                <input 
+                  type="text" 
+                  id="filtroRelatorioClienteTexto" 
+                  oninput="renderizarRelatorioVendasPorCliente()" 
+                  placeholder="Buscar cliente ou produto..." 
+                  class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                >
+              </div>
+
+              <!-- Seletor de Cliente específico -->
+              <select 
+                id="filtroRelatorioClienteSelect" 
+                onchange="renderizarRelatorioVendasPorCliente()" 
+                class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-700 focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="">Todos os Clientes</option>
+              </select>
+
+              <!-- Botão Exportar CSV -->
+              <button 
+                onclick="exportarRelatorioVendasPorClienteCSV()" 
+                class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+              >
+                <i class="fa-solid fa-file-excel"></i> Exportar CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Cards de KPIs do Relatório -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-100">
+            <div class="p-3.5 rounded-2xl bg-orange-50/70 border border-orange-200/80">
+              <span class="block text-[10px] font-bold text-slate-500 uppercase">Clientes c/ Compras</span>
+              <span class="block text-lg sm:text-xl font-extrabold text-orange-700 mt-0.5" id="kpiRelCliTotalClientes">0</span>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+              <span class="block text-[10px] font-bold text-slate-500 uppercase">Total Comprado (R$)</span>
+              <span class="block text-lg sm:text-xl font-extrabold text-emerald-700 mt-0.5" id="kpiRelCliTotalValor">R$ 0,00</span>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200/80">
+              <span class="block text-[10px] font-bold text-slate-500 uppercase">Itens / Unidades</span>
+              <span class="block text-lg sm:text-xl font-extrabold text-blue-700 mt-0.5" id="kpiRelCliTotalItens">0 un</span>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200/80">
+              <span class="block text-[10px] font-bold text-slate-500 uppercase">Ticket Médio</span>
+              <span class="block text-lg sm:text-xl font-extrabold text-purple-700 mt-0.5" id="kpiRelCliTicketMedio">R$ 0,00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Vendas Agrupadas por Cliente -->
+        <div id="containerRelatorioVendasCliente" class="space-y-4">
+          <!-- Renderizado dinamicamente via JS -->
         </div>
       </div>
 
@@ -1656,6 +1738,7 @@
         'produtos': { titulo: 'Estoque & Produtos', icone: 'fa-box-open' },
         'venda': { titulo: 'Registrar Venda', icone: 'fa-cash-register' },
         'clientes': { titulo: 'Gestão de Clientes', icone: 'fa-users' },
+        'vendas-cliente': { titulo: 'Relatório de Vendas por Cliente', icone: 'fa-file-invoice-dollar text-orange-600' },
         'aniversariantes': { titulo: 'Central de Aniversariantes', icone: 'fa-cake-candles text-pink-500' },
         'historico': { titulo: 'Histórico de Vendas', icone: 'fa-clock-rotate-left' },
         'importacoes': { titulo: 'Log de Importações (PDF)', icone: 'fa-file-lines' },
@@ -1673,6 +1756,9 @@
       }
       if (nome === 'aniversariantes') {
         renderizarAbaAniversariantes();
+      }
+      if (nome === 'vendas-cliente') {
+        renderizarRelatorioVendasPorCliente();
       }
       if (nome === 'importacoes') {
         renderizarLogsImportacao();
@@ -1771,6 +1857,11 @@
 
       document.getElementById('badgeEstoque').textContent = totalEstoqueQtd;
       document.getElementById('badgeClientes').textContent = clientesCache.length;
+
+      // Clientes Únicos com Compras para o Badge do Menu Lateral
+      const clientesCompradores = new Set(vendasCache.map(v => (v.cliente || '').trim()).filter(Boolean));
+      const badgeVendasCliEl = document.getElementById('badgeVendasCliente');
+      if (badgeVendasCliEl) badgeVendasCliEl.textContent = clientesCompradores.size;
 
       // Aniversariantes do Mês Atual para o Badge do Menu Lateral
       const mesAtualNum = new Date().getMonth() + 1;
@@ -2783,6 +2874,9 @@
             <td class="py-3 px-3 text-slate-500 text-xs truncate max-w-[150px]">${c.observacoes || '-'}</td>
             <td class="py-3 px-4 text-center">
               <div class="flex items-center justify-center gap-1.5">
+                <button onclick="abrirRelatorioClienteVendas('${c.nome.replace(/'/g, "\\'")}')" title="Ver Compras deste Cliente" class="p-1.5 bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white rounded-lg transition text-xs">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                </button>
                 ${linkWhats ? `
                   <a href="${linkWhats}" target="_blank" title="Conversar no WhatsApp" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition text-xs">
                     <i class="fa-brands fa-whatsapp"></i>
@@ -3437,6 +3531,343 @@
         btnSalvar.disabled = false;
         btnSalvar.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações`;
       }
+    }
+
+    // ================= RELATÓRIO DE VENDAS POR CLIENTE =================
+    function abrirRelatorioClienteVendas(nomeCliente) {
+      mudarAba('vendas-cliente');
+      const selectCli = document.getElementById('filtroRelatorioClienteSelect');
+      if (selectCli) {
+        selectCli.value = nomeCliente;
+      }
+      const inputBusca = document.getElementById('filtroRelatorioClienteTexto');
+      if (inputBusca) {
+        inputBusca.value = '';
+      }
+      renderizarRelatorioVendasPorCliente();
+    }
+
+    function renderizarRelatorioVendasPorCliente() {
+      const container = document.getElementById('containerRelatorioVendasCliente');
+      if (!container) return;
+
+      const buscaTexto = (document.getElementById('filtroRelatorioClienteTexto')?.value || '').toLowerCase().trim();
+      const filtroClienteSel = document.getElementById('filtroRelatorioClienteSelect')?.value || '';
+
+      // Atualiza as opções do Select com todos os clientes distintos
+      const selectCli = document.getElementById('filtroRelatorioClienteSelect');
+      if (selectCli) {
+        const valorAtual = selectCli.value;
+        const nomesUnicos = new Set();
+        vendasCache.forEach(v => {
+          const n = (v.cliente || '').trim();
+          if (n) nomesUnicos.add(n);
+        });
+        clientesCache.forEach(c => {
+          const n = (c.nome || '').trim();
+          if (n) nomesUnicos.add(n);
+        });
+
+        const listaNomes = Array.from(nomesUnicos).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        selectCli.innerHTML = '<option value="">Todos os Clientes</option>' + 
+          listaNomes.map(n => `<option value="${n.replace(/"/g, '&quot;')}" ${n === valorAtual ? 'selected' : ''}>${n}</option>`).join('');
+      }
+
+      // Agrupa todas as vendas por cliente
+      const clientesMap = {};
+      
+      // Cria mapa de clientes da base para enriquecer com telefone e WhatsApp
+      const mapaClientesCadastrados = {};
+      clientesCache.forEach(c => {
+        if (c.nome) mapaClientesCadastrados[c.nome.trim().toLowerCase()] = c;
+      });
+
+      vendasCache.forEach(v => {
+        const nomeCli = (v.cliente || 'Consumidor (Sem Identificação)').trim();
+        const chave = nomeCli.toLowerCase();
+
+        if (!clientesMap[chave]) {
+          const cadastrado = mapaClientesCadastrados[chave];
+          clientesMap[chave] = {
+            nome: nomeCli,
+            telefone: v.cliente_telefone || (cadastrado ? cadastrado.telefone : '') || '',
+            email: v.cliente_email || (cadastrado ? cadastrado.email : '') || '',
+            compras: [],
+            totalGasto: 0,
+            totalItens: 0,
+            totalLucro: 0,
+            totalPago: 0,
+            totalPendente: 0,
+            ultimaDataCompra: null
+          };
+        }
+
+        const qtd = parseInt(v.quantidade) || 1;
+        const valorTotal = parseFloat(v.vl_total_venda) || 0;
+        const lucroTotal = parseFloat(v.lucro_total) || 0;
+        const isPago = (v.status_pagamento === 'Pago' || v.status_pagamento === 'Recebido');
+
+        clientesMap[chave].totalGasto += valorTotal;
+        clientesMap[chave].totalItens += qtd;
+        clientesMap[chave].totalLucro += lucroTotal;
+        if (isPago) {
+          clientesMap[chave].totalPago += valorTotal;
+        } else {
+          clientesMap[chave].totalPendente += valorTotal;
+        }
+
+        if (v.data_venda) {
+          if (!clientesMap[chave].ultimaDataCompra || v.data_venda > clientesMap[chave].ultimaDataCompra) {
+            clientesMap[chave].ultimaDataCompra = v.data_venda;
+          }
+        }
+
+        clientesMap[chave].compras.push(v);
+      });
+
+      // Transforma em array e ordena as compras de cada cliente da mais recente para a mais antiga
+      let clientesArray = Object.values(clientesMap);
+      clientesArray.forEach(c => {
+        c.compras.sort((a, b) => (b.data_venda || '').localeCompare(a.data_venda || ''));
+      });
+
+      // Aplica filtros
+      if (filtroClienteSel) {
+        clientesArray = clientesArray.filter(c => c.nome.toLowerCase() === filtroClienteSel.toLowerCase());
+      }
+
+      if (buscaTexto) {
+        clientesArray = clientesArray.filter(c => {
+          const bateNome = c.nome.toLowerCase().includes(buscaTexto);
+          const bateTel = c.telefone && c.telefone.includes(buscaTexto);
+          const bateProduto = c.compras.some(comp => 
+            (comp.descricao && comp.descricao.toLowerCase().includes(buscaTexto)) ||
+            (comp.codigo && String(comp.codigo).includes(buscaTexto))
+          );
+          return bateNome || bateTel || bateProduto;
+        });
+      }
+
+      // Ordena clientes por maior valor comprado (Top compradores no topo)
+      clientesArray.sort((a, b) => b.totalGasto - a.totalGasto);
+
+      // Atualiza KPIs globais do Relatório
+      let somaClientes = clientesArray.length;
+      let somaValor = 0;
+      let somaItens = 0;
+      clientesArray.forEach(c => {
+        somaValor += c.totalGasto;
+        somaItens += c.totalItens;
+      });
+      const ticketMedio = somaClientes > 0 ? (somaValor / somaClientes) : 0;
+
+      const elKpiCli = document.getElementById('kpiRelCliTotalClientes');
+      if (elKpiCli) elKpiCli.textContent = somaClientes;
+      const elKpiVal = document.getElementById('kpiRelCliTotalValor');
+      if (elKpiVal) elKpiVal.textContent = formataBRL(somaValor);
+      const elKpiItens = document.getElementById('kpiRelCliTotalItens');
+      if (elKpiItens) elKpiItens.textContent = `${somaItens} un`;
+      const elKpiTicket = document.getElementById('kpiRelCliTicketMedio');
+      if (elKpiTicket) elKpiTicket.textContent = formataBRL(ticketMedio);
+
+      // Renderiza os cards de cada cliente com sua tabela de compras detalhada
+      if (clientesArray.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-dashed border-orange-200 p-12 text-center text-slate-500">
+            <i class="fa-solid fa-file-circle-xmark text-4xl text-orange-300 mb-3"></i>
+            <h3 class="font-bold text-slate-700 text-sm">Nenhuma venda encontrada</h3>
+            <p class="text-xs text-slate-400 mt-1">Nenhum registro corresponde aos filtros selecionados.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = clientesArray.map((c, idx) => {
+        const telFormatado = c.telefone ? c.telefone.replace(/\D/g, '') : '';
+        const msgWhats = encodeURIComponent(`Olá ${c.nome}! Tudo bem? Passando para te agradecer pela preferência em suas compras.`);
+        const linkWhats = telFormatado ? `https://wa.me/55${telFormatado}?text=${msgWhats}` : null;
+        const ultimaCompraFormatada = c.ultimaDataCompra ? formataDataBR(c.ultimaDataCompra) : '-';
+
+        const statusGeralHtml = c.totalPendente <= 0
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black border border-emerald-200">
+               <i class="fa-solid fa-circle-check"></i> 100% Pago
+             </span>`
+          : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-[11px] font-black border border-amber-300">
+               <i class="fa-solid fa-clock"></i> Pendente: ${formataBRL(c.totalPendente)}
+             </span>`;
+
+        return `
+          <div class="bg-white rounded-2xl border border-orange-100 shadow-sm overflow-hidden transition hover:shadow-md">
+            <!-- Cabeçalho do Cliente -->
+            <div class="p-4 sm:p-5 bg-gradient-to-r from-orange-50/70 via-amber-50/50 to-white border-b border-orange-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 text-white font-black text-sm flex items-center justify-center shadow-md shadow-orange-600/20 flex-shrink-0">
+                  ${c.nome.substring(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="font-extrabold text-slate-800 text-base">${c.nome}</h3>
+                    ${statusGeralHtml}
+                  </div>
+                  <div class="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                    ${c.telefone ? `
+                      <span class="inline-flex items-center gap-1 font-mono text-slate-600">
+                        <i class="fa-solid fa-phone text-orange-500 text-[10px]"></i> ${c.telefone}
+                      </span>
+                    ` : ''}
+                    ${linkWhats ? `
+                      <a href="${linkWhats}" target="_blank" class="inline-flex items-center gap-1 text-emerald-600 font-bold hover:underline">
+                        <i class="fa-brands fa-whatsapp text-emerald-500"></i> WhatsApp
+                      </a>
+                    ` : ''}
+                    <span class="text-slate-400">•</span>
+                    <span>Última compra: <b>${ultimaCompraFormatada}</b></span>
+                    <span class="text-slate-400">•</span>
+                    <span><b>${c.compras.length}</b> ${c.compras.length === 1 ? 'pedido' : 'pedidos'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Indicadores Consolidados do Cliente -->
+              <div class="flex items-center gap-2 sm:gap-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-2 md:pt-0 border-orange-100/60">
+                <div class="text-left md:text-right">
+                  <span class="text-[10px] uppercase font-bold text-slate-500 block">Total em Itens</span>
+                  <span class="text-xs sm:text-sm font-black text-slate-700">${c.totalItens} unidades</span>
+                </div>
+                <div class="text-right bg-orange-500/10 px-3 py-1.5 rounded-xl border border-orange-200">
+                  <span class="text-[10px] uppercase font-extrabold text-orange-800 block">Total Comprado</span>
+                  <span class="text-sm sm:text-base font-black text-orange-700">${formataBRL(c.totalGasto)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabela de Itens Comprados pelo Cliente -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50/80 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-100">
+                  <tr>
+                    <th class="py-2.5 px-4">Data da Compra</th>
+                    <th class="py-2.5 px-3">Cód.</th>
+                    <th class="py-2.5 px-4">Descrição do Produto</th>
+                    <th class="py-2.5 px-3 text-center">Qtd Itens</th>
+                    <th class="py-2.5 px-3 text-right">Valor Unit.</th>
+                    <th class="py-2.5 px-3 text-right">Total da Venda</th>
+                    <th class="py-2.5 px-3 text-center">Forma Pag.</th>
+                    <th class="py-2.5 px-3 text-center">Status Pagamento</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${c.compras.map(comp => {
+                    const dataFormatada = comp.data_venda ? formataDataBR(comp.data_venda) : '-';
+                    const isPagoComp = (comp.status_pagamento === 'Pago' || comp.status_pagamento === 'Recebido');
+                    const badgeStatus = isPagoComp
+                      ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                           <i class="fa-solid fa-circle-check text-[9px]"></i> Recebido
+                         </span>`
+                      : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+                           <i class="fa-solid fa-clock text-[9px]"></i> Pendente
+                         </span>`;
+
+                    return `
+                      <tr class="hover:bg-orange-50/30 transition">
+                        <td class="py-2.5 px-4 font-bold text-slate-800 whitespace-nowrap">
+                          <i class="fa-regular fa-calendar text-slate-400 mr-1 text-[10px]"></i> ${dataFormatada}
+                        </td>
+                        <td class="py-2.5 px-3 font-mono text-slate-500">${comp.codigo || '-'}</td>
+                        <td class="py-2.5 px-4 font-bold text-slate-800">
+                          ${comp.descricao || 'Produto'}
+                          ${comp.observacoes ? `<span class="block text-[10px] font-normal text-slate-400 italic">${comp.observacoes}</span>` : ''}
+                        </td>
+                        <td class="py-2.5 px-3 text-center font-extrabold text-slate-700">
+                          <span class="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-xs">
+                            ${comp.quantidade || 1} un
+                          </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-medium text-slate-600">${formataBRL(comp.vl_unit_venda)}</td>
+                        <td class="py-2.5 px-3 text-right font-black text-slate-900">${formataBRL(comp.vl_total_venda)}</td>
+                        <td class="py-2.5 px-3 text-center">
+                          <span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600">
+                            ${comp.forma_pagamento || 'Pix'}
+                          </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">${badgeStatus}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+                <!-- Rodapé do Cliente com Subtotais -->
+                <tfoot class="bg-slate-50/60 font-bold border-t border-slate-200 text-slate-700 text-xs">
+                  <tr>
+                    <td colspan="3" class="py-2.5 px-4 text-right uppercase text-[10px] font-extrabold text-slate-500">
+                      Subtotais do Cliente:
+                    </td>
+                    <td class="py-2.5 px-3 text-center font-black text-orange-700">${c.totalItens} un</td>
+                    <td></td>
+                    <td class="py-2.5 px-3 text-right font-black text-emerald-700">${formataBRL(c.totalGasto)}</td>
+                    <td colspan="2" class="py-2.5 px-3 text-center text-[10px]">
+                      <span class="text-emerald-700 font-extrabold">Pago: ${formataBRL(c.totalPago)}</span>
+                      ${c.totalPendente > 0 ? ` • <span class="text-amber-700 font-extrabold">Pendente: ${formataBRL(c.totalPendente)}</span>` : ''}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function exportarRelatorioVendasPorClienteCSV() {
+      if (!vendasCache || vendasCache.length === 0) {
+        Swal.fire('Aviso', 'Não há dados de vendas para exportar.', 'info');
+        return;
+      }
+
+      const cabecalho = [
+        "Cliente",
+        "Telefone",
+        "Data da Compra",
+        "Código",
+        "Produto",
+        "Qtd Itens",
+        "Valor Unitário (R$)",
+        "Total da Venda (R$)",
+        "Forma de Pagamento",
+        "Status do Pagamento",
+        "Observações"
+      ];
+
+      // Ordena por cliente e por data
+      const vendasOrdenadas = [...vendasCache].sort((a, b) => {
+        const cA = (a.cliente || '').localeCompare(b.cliente || '', 'pt-BR');
+        if (cA !== 0) return cA;
+        return (b.data_venda || '').localeCompare(a.data_venda || '');
+      });
+
+      const linhas = vendasOrdenadas.map(v => [
+        `"${(v.cliente || 'Consumidor').replace(/"/g, '""')}"`,
+        `"${(v.cliente_telefone || '').replace(/"/g, '""')}"`,
+        v.data_venda ? formataDataBR(v.data_venda) : '-',
+        `"${v.codigo || ''}"`,
+        `"${(v.descricao || '').replace(/"/g, '""')}"`,
+        v.quantidade || 1,
+        (parseFloat(v.vl_unit_venda) || 0).toFixed(2).replace('.', ','),
+        (parseFloat(v.vl_total_venda) || 0).toFixed(2).replace('.', ','),
+        `"${(v.forma_pagamento || '').replace(/"/g, '""')}"`,
+        `"${(v.status_pagamento || '').replace(/"/g, '""')}"`,
+        `"${(v.observacoes || '').replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = '\uFEFF' + [cabecalho.join(';'), ...linhas.map(e => e.join(';'))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      const dataHoje = new Date().toISOString().substring(0, 10);
+      link.setAttribute("download", `relatorio_vendas_por_cliente_${dataHoje}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     // ================= CENTRAL DE BACKUP DO BANCO =================
