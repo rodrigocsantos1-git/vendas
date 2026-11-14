@@ -324,49 +324,89 @@
 
         <!-- ================= TAB: DASHBOARD (VISÃO GERAL COM GRÁFICOS) ================= -->
         <div id="tab-dashboard" class="tab-content space-y-6">
-          <!-- KPI Cards -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
-              <div>
-                <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total em Estoque</p>
-                <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1" id="kpiEstoqueQtd">0</p>
-                <p class="text-[11px] text-slate-600 mt-0.5" id="kpiEstoqueItens">0 itens cadastrados</p>
+          <!-- KPI Cards no Topo do Painel (Sequência Solicitada: 6 Cards) -->
+          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
+            <!-- 1. Valor do Investimento -->
+            <div class="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Valor Investimento</span>
+                <div class="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-sm shadow-xs">
+                  <i class="fa-solid fa-receipt"></i>
+                </div>
               </div>
-              <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl">
-                <i class="fa-solid fa-cubes"></i>
-              </div>
-            </div>
-
-            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
-              <div>
-                <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Valor do Investimento</p>
-                <p class="text-xl sm:text-2xl font-extrabold text-slate-800 mt-1" id="kpiEstoqueValor">R$ 0,00</p>
-                <p class="text-[11px] text-emerald-600 font-medium mt-0.5">Valor pago na nota</p>
-              </div>
-              <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
-                <i class="fa-solid fa-receipt"></i>
+              <div class="mt-2">
+                <p class="text-base sm:text-lg font-black text-slate-800 truncate" id="kpiEstoqueValor">R$ 0,00</p>
+                <p class="text-[10px] text-emerald-600 font-bold mt-0.5">Valor pago na nota</p>
               </div>
             </div>
 
-            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
-              <div>
-                <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Faturado</p>
-                <p class="text-xl sm:text-2xl font-extrabold text-emerald-600 mt-1" id="kpiTotalVendas">R$ 0,00</p>
-                <p class="text-[11px] text-slate-600 mt-0.5" id="kpiVendasQtd">0 vendas</p>
+            <!-- 2. Total Recebido (Já Pago) -->
+            <div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Total Recebido</span>
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm shadow-xs">
+                  <i class="fa-solid fa-circle-check"></i>
+                </div>
               </div>
-              <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-                <i class="fa-solid fa-sack-dollar"></i>
+              <div class="mt-2">
+                <p class="text-base sm:text-lg font-black text-emerald-600 truncate" id="kpiTotalRecebido">R$ 0,00</p>
+                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiRecebidoQtd">0 vendas quitadas</p>
               </div>
             </div>
 
-            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-orange-100/80 shadow-sm flex items-center justify-between">
-              <div>
-                <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider">Lucro Estimado</p>
-                <p class="text-xl sm:text-2xl font-extrabold text-blue-600 mt-1" id="kpiLucroTotal">R$ 0,00</p>
-                <p class="text-[11px] text-slate-600 mt-0.5" id="kpiMargemMedia">Margem: 0%</p>
+            <!-- 3. Total a Receber (Pendente) -->
+            <div class="bg-white p-4 rounded-2xl border border-amber-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Total a Receber</span>
+                <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-sm shadow-xs">
+                  <i class="fa-solid fa-clock"></i>
+                </div>
               </div>
-              <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
-                <i class="fa-solid fa-chart-line"></i>
+              <div class="mt-2">
+                <p class="text-base sm:text-lg font-black text-amber-600 truncate" id="kpiTotalAReceber">R$ 0,00</p>
+                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiAReceberQtd">0 vendas pendentes</p>
+              </div>
+            </div>
+
+            <!-- 4. Total Faturado -->
+            <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Faturado</span>
+                <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm shadow-xs">
+                  <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+              </div>
+              <div class="mt-2">
+                <p class="text-base sm:text-lg font-black text-slate-800 truncate" id="kpiTotalVendas">R$ 0,00</p>
+                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiVendasQtd">0 vendas</p>
+              </div>
+            </div>
+
+            <!-- 5. Lucro Estimado -->
+            <div class="bg-white p-4 rounded-2xl border border-purple-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Lucro Estimado</span>
+                <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-sm shadow-xs">
+                  <i class="fa-solid fa-chart-line"></i>
+                </div>
+              </div>
+              <div class="mt-2">
+                <p class="text-base sm:text-lg font-black text-purple-600 truncate" id="kpiLucroTotal">R$ 0,00</p>
+                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiMargemMedia">Margem: 0%</p>
+              </div>
+            </div>
+
+            <!-- 6. Total em Estoque -->
+            <div class="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total em Estoque</span>
+                <div class="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-sm shadow-xs">
+                  <i class="fa-solid fa-cubes"></i>
+                </div>
+              </div>
+              <div class="mt-2">
+                <p class="text-lg sm:text-xl font-black text-slate-800 truncate" id="kpiEstoqueQtd">0</p>
+                <p class="text-[10px] text-slate-500 font-medium mt-0.5" id="kpiEstoqueItens">0 produtos</p>
               </div>
             </div>
           </div>
@@ -381,17 +421,17 @@
                     <i class="fa-solid fa-chart-line text-orange-600 text-lg"></i>
                     <div>
                       <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Volume de Vendas por Dia</h3>
-                      <p class="text-[11px] text-slate-500">Unidades vendidas e itens/pedidos por data</p>
+                      <p class="text-[11px] text-slate-500">Quantidade de itens vendidos por data</p>
                     </div>
                   </div>
-                  <span class="text-[11px] text-slate-400 font-semibold">Qtd & Itens</span>
+                  <span class="text-[11px] text-slate-400 font-semibold">Qtd de Itens</span>
                 </div>
                 <div class="h-64 sm:h-72 relative">
                   <canvas id="chartVolumeVendasDia"></canvas>
                 </div>
               </div>
               <!-- Resumo numérico do gráfico diário -->
-              <div id="resumoVolumeDiaCards" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-3 border-t border-slate-100">
+              <div id="resumoVolumeDiaCards" class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100">
               </div>
             </div>
 
@@ -2054,20 +2094,64 @@
 
       let totalVendidoValor = 0;
       let totalLucro = 0;
+      let totalRecebidoValor = 0;
+      let totalRecebidoQtd = 0;
+      let totalAReceberValor = 0;
+      let totalAReceberQtd = 0;
+
       vendasCache.forEach(v => {
-        totalVendidoValor += parseFloat(v.vl_total_venda) || 0;
-        totalLucro += parseFloat(v.lucro_total) || 0;
+        const vlVenda = parseFloat(v.vl_total_venda) || 0;
+        const lucro = parseFloat(v.lucro_total) || 0;
+        const statusStr = (v.status_pagamento || '').trim();
+        const isPago = (statusStr === 'Pago' || statusStr === 'Recebido');
+
+        totalVendidoValor += vlVenda;
+        totalLucro += lucro;
+
+        if (isPago) {
+          totalRecebidoValor += vlVenda;
+          totalRecebidoQtd++;
+        } else {
+          totalAReceberValor += vlVenda;
+          totalAReceberQtd++;
+        }
       });
 
       const margemMedia = totalVendidoValor > 0 ? ((totalLucro / totalVendidoValor) * 100).toFixed(1) : 0;
 
-      document.getElementById('kpiEstoqueQtd').textContent = totalEstoqueQtd;
-      document.getElementById('kpiEstoqueItens').textContent = `${produtosCache.length} produtos cadastrados`;
-      document.getElementById('kpiEstoqueValor').textContent = formataBRL(totalInvestimentoPago);
-      document.getElementById('kpiTotalVendas').textContent = formataBRL(totalVendidoValor);
-      document.getElementById('kpiVendasQtd').textContent = `${vendasCache.length} vendas registradas`;
-      document.getElementById('kpiLucroTotal').textContent = formataBRL(totalLucro);
-      document.getElementById('kpiMargemMedia').textContent = `Margem média: ${margemMedia}%`;
+      // 1. Valor do Investimento
+      const elInv = document.getElementById('kpiEstoqueValor');
+      if (elInv) elInv.textContent = formataBRL(totalInvestimentoPago);
+
+      // 2. Total Recebido (Valores que já foram pagos)
+      const elRec = document.getElementById('kpiTotalRecebido');
+      if (elRec) elRec.textContent = formataBRL(totalRecebidoValor);
+      const elRecQtd = document.getElementById('kpiRecebidoQtd');
+      if (elRecQtd) elRecQtd.textContent = `${totalRecebidoQtd} ${totalRecebidoQtd === 1 ? 'venda quitada' : 'vendas quitadas'}`;
+
+      // 3. Total a Receber (Valores que ainda não foram pagos)
+      const elPend = document.getElementById('kpiTotalAReceber');
+      if (elPend) elPend.textContent = formataBRL(totalAReceberValor);
+      const elPendQtd = document.getElementById('kpiAReceberQtd');
+      if (elPendQtd) elPendQtd.textContent = `${totalAReceberQtd} ${totalAReceberQtd === 1 ? 'venda pendente' : 'vendas pendentes'}`;
+
+      // 4. Total Faturado
+      const elFat = document.getElementById('kpiTotalVendas');
+      if (elFat) elFat.textContent = formataBRL(totalVendidoValor);
+      const elFatQtd = document.getElementById('kpiVendasQtd');
+      if (elFatQtd) elFatQtd.textContent = `${vendasCache.length} vendas registradas`;
+
+      // 5. Lucro Estimado
+      const elLuc = document.getElementById('kpiLucroTotal');
+      if (elLuc) elLuc.textContent = formataBRL(totalLucro);
+      const elMargem = document.getElementById('kpiMargemMedia');
+      if (elMargem) elMargem.textContent = `Margem: ${margemMedia}%`;
+
+      // 6. Total em Estoque
+      const elEst = document.getElementById('kpiEstoqueQtd');
+      if (elEst) elEst.textContent = totalEstoqueQtd;
+      const elEstItens = document.getElementById('kpiEstoqueItens');
+      if (elEstItens) elEstItens.textContent = `${produtosCache.length} produtos cadastrados`;
 
       document.getElementById('badgeEstoque').textContent = totalEstoqueQtd;
       document.getElementById('badgeClientes').textContent = clientesCache.length;
@@ -2430,59 +2514,76 @@
 
         const divResumoVol = document.getElementById('resumoVolumeDiaCards');
         if (divResumoVol) {
+          const totalFaturadoDias = dias.reduce((acc, d) => acc + (mapDias[d]?.valorTotal || 0), 0);
           divResumoVol.innerHTML = `
             <div class="p-2 rounded-xl border bg-orange-50 border-orange-200 text-center">
-              <span class="block text-[10px] font-bold text-slate-600 uppercase">Qtd Unidades</span>
+              <span class="block text-[10px] font-bold text-slate-600 uppercase">Itens Vendidos</span>
               <span class="block text-xs sm:text-sm font-black text-orange-600 mt-0.5">${somaTotalQtd} un</span>
             </div>
-            <div class="p-2 rounded-xl border bg-blue-50 border-blue-200 text-center">
-              <span class="block text-[10px] font-bold text-slate-600 uppercase">Vendas Registradas</span>
-              <span class="block text-xs sm:text-sm font-black text-blue-600 mt-0.5">${somaTotalItens} vendas</span>
+            <div class="p-2 rounded-xl border bg-emerald-50 border-emerald-200 text-center">
+              <span class="block text-[10px] font-bold text-slate-600 uppercase">Total Faturado</span>
+              <span class="block text-xs sm:text-sm font-black text-emerald-600 mt-0.5">${formataBRL(totalFaturadoDias)}</span>
             </div>
-            <div class="p-2 rounded-xl border bg-emerald-50 border-emerald-200 text-center col-span-2">
-              <span class="block text-[10px] font-bold text-slate-600 uppercase">Dias Ativos</span>
-              <span class="block text-xs sm:text-sm font-black text-emerald-600 mt-0.5">${dias.length} ${dias.length === 1 ? 'dia ativo' : 'dias ativos'}</span>
+            <div class="p-2 rounded-xl border bg-blue-50 border-blue-200 text-center">
+              <span class="block text-[10px] font-bold text-slate-600 uppercase">Dias com Vendas</span>
+              <span class="block text-xs sm:text-sm font-black text-blue-600 mt-0.5">${dias.length} ${dias.length === 1 ? 'dia ativo' : 'dias ativos'}</span>
             </div>
           `;
         }
 
+        // Plugin para desenhar o número de itens vendidos no topo de cada barra
+        const barVolValuesPlugin = {
+          id: 'barVolValuesPlugin',
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            ctx.save();
+            const meta = chart.getDatasetMeta(0);
+            meta.data.forEach((bar, index) => {
+              const valor = chart.data.datasets[0].data[index] || 0;
+              if (valor > 0) {
+                const texto = `${valor} un`;
+                ctx.font = '800 11px Inter, sans-serif';
+                ctx.fillStyle = '#c2410c';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(texto, bar.x, bar.y - 4);
+              }
+            });
+            ctx.restore();
+          }
+        };
+
         chartVolumeVendasDiaInstance = new Chart(ctxVol, {
           type: 'bar',
+          plugins: [barVolValuesPlugin],
           data: {
             labels: labelsFormatados.length > 0 ? labelsFormatados : ['Sem vendas'],
             datasets: [
               {
-                label: 'Qtd Unidades Vendidas',
+                label: 'Quantidade de Itens Vendidos',
                 data: dadosQtd.length > 0 ? dadosQtd : [0],
                 backgroundColor: 'rgba(234, 88, 12, 0.85)',
                 borderColor: '#ea580c',
                 borderWidth: 1.5,
-                borderRadius: 6
-              },
-              {
-                label: 'Qtd Itens / Vendas',
-                data: dadosItens.length > 0 ? dadosItens : [0],
-                backgroundColor: 'rgba(59, 130, 246, 0.85)',
-                borderColor: '#3b82f6',
-                borderWidth: 1.5,
-                borderRadius: 6
+                borderRadius: 8
               }
             ]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+              padding: { top: 24 }
+            },
             plugins: {
               legend: {
-                display: true,
-                position: 'top',
-                labels: {
-                  boxWidth: 12,
-                  font: { size: 10, weight: 'bold' }
-                }
+                display: false
               },
               tooltip: {
                 callbacks: {
+                  label: function(context) {
+                    return `Itens vendidos: ${context.raw} un`;
+                  },
                   afterBody: function(tooltipItems) {
                     const idx = tooltipItems[0].dataIndex;
                     const diaISO = dias[idx];
